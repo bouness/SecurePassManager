@@ -65,7 +65,7 @@ class FirewallManager:
             self.active = False
             return False
         except Exception as e:
-            self.logger.exception("Unexpected firewall error")
+            self.logger.exception(f"Unexpected firewall error: {e}")
             self.active = False
             return False
 

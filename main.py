@@ -89,7 +89,7 @@ class PasswordManagerApp:
                     stdout=subprocess.DEVNULL,
                 )
                 return result.returncode == 0
-        except:
+        except Exception:
             return False
 
     def run(self):

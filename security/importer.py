@@ -276,30 +276,67 @@ class PasswordImporter:
         """Generic JSON importer with key detection"""
         imported_count = 0
 
-        with open(file_path, "r", encoding="utf-8") as f:
-            try:
-                data = json.load(f)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Invalid JSON: {e}")
+        data = self._load_json(file_path)
 
-        if not isinstance(data, list):
-            raise ValueError("JSON must be a list of objects")
+        # Validate keys if necessary
+        all_keys = self._get_all_keys(data)
+        if expected_keys:
+            self._check_missing_keys(all_keys, expected_keys)
 
-        # Validate keys
+        # Create progress dialog
+        progress = self._create_progress_dialog(data, parent)
+
+        # Field mappings
+        fields = self._map_fields(all_keys)
+
+        # Import data
+        for i, entry in enumerate(data):
+            if progress.wasCanceled() or not isinstance(entry, dict):
+                continue
+
+            if not self._validate_required_fields(fields):
+                raise ValueError("Could not detect required fields (service or password)")
+
+            # Extract field values
+            service, username, password, url, notes = self._extract_entry_fields(entry, fields)
+
+            # Add to database if valid
+            if service and password:
+                self.db.add_password(service, username, password, "Imported", url, notes)
+                imported_count += 1
+
+            progress.setValue(i + 1)
+
+        progress.close()
+        return imported_count
+
+    def _load_json(self, file_path):
+        """Load JSON from file and handle errors"""
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                return json.load(f)
+        except json.JSONDecodeError as e:
+            raise ValueError(f"Invalid JSON: {e}")
+
+    def _get_all_keys(self, data):
+        """Extract all unique keys from JSON data"""
         all_keys = set()
         for entry in data:
             if isinstance(entry, dict):
                 all_keys.update(entry.keys())
-        if expected_keys:
-            missing = [
-                k
-                for k in expected_keys
-                if k.lower() not in [key.lower() for key in all_keys]
-            ]
-            if missing:
-                raise ValueError(f"Missing required keys: {', '.join(missing)}")
+        return all_keys
 
-        # Create progress dialog
+    def _check_missing_keys(self, all_keys, expected_keys):
+        """Check if any expected keys are missing"""
+        missing = [
+            k for k in expected_keys
+            if k.lower() not in [key.lower() for key in all_keys]
+        ]
+        if missing:
+            raise ValueError(f"Missing required keys: {', '.join(missing)}")
+
+    def _create_progress_dialog(self, data, parent):
+        """Create and return a progress dialog"""
         total_items = len(data)
         progress = QProgressDialog(
             "Importing Passwords...", "Cancel", 0, total_items, parent
@@ -307,47 +344,31 @@ class PasswordImporter:
         progress.setWindowTitle("Import Progress")
         progress.setWindowModality(Qt.WindowModal)
         progress.show()
+        return progress
 
-        # Field mapping
-        service_field = self._detect_field(
-            all_keys, ["name", "title", "service", "website"]
+    def _map_fields(self, all_keys):
+        """Map all detected fields from the JSON keys"""
+        return {
+            "service": self._detect_field(all_keys, ["name", "title", "service", "website"]),
+            "user": self._detect_field(all_keys, ["username", "user", "login", "email"]),
+            "password": self._detect_field(all_keys, ["password", "pass", "pwd", "secret"]),
+            "url": self._detect_field(all_keys, ["url", "website", "link"]),
+            "notes": self._detect_field(all_keys, ["notes", "comment", "description"]),
+        }
+
+    def _validate_required_fields(self, fields):
+        """Validate if the required fields are present"""
+        return bool(fields["service"]) and bool(fields["password"])
+
+    def _extract_entry_fields(self, entry, fields):
+        """Extract field values from an entry"""
+        return (
+            entry.get(fields["service"], ""),
+            entry.get(fields["user"], ""),
+            entry.get(fields["password"], ""),
+            entry.get(fields["url"], ""),
+            entry.get(fields["notes"], "")
         )
-        user_field = self._detect_field(
-            all_keys, ["username", "user", "login", "email"]
-        )
-        pass_field = self._detect_field(all_keys, ["password", "pass", "pwd", "secret"])
-        url_field = self._detect_field(all_keys, ["url", "website", "link"])
-        notes_field = self._detect_field(all_keys, ["notes", "comment", "description"])
-
-        for i, entry in enumerate(data):
-            if progress.wasCanceled():
-                break
-
-            if not isinstance(entry, dict):
-                continue
-
-            if not pass_field or not service_field:
-                raise ValueError(
-                    "Could not detect required fields (service or password)"
-                )
-
-            service = entry.get(service_field, "")
-            username = entry.get(user_field, "")
-            password = entry.get(pass_field, "")
-            url = entry.get(url_field, "")
-            notes = entry.get(notes_field, "")
-
-            # Add to database
-            if service and password:
-                self.db.add_password(
-                    service, username, password, "Imported", url, notes
-                )
-                imported_count += 1
-
-            progress.setValue(i + 1)
-
-        progress.close()
-        return imported_count
 
     def _detect_field(self, fieldnames, candidates):
         """Find the best matching field from candidates"""

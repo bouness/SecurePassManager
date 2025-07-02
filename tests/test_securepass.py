@@ -9,7 +9,6 @@ import subprocess
 import sys
 import tempfile
 import unittest
-from datetime import datetime
 from unittest.mock import MagicMock, patch
 
 # Add the app directory to the path
@@ -19,7 +18,6 @@ from security.crypto import CryptoManager
 from security.database import SecureDatabase
 from security.exporter import PasswordExporter
 from security.firewall import FirewallManager
-# from security.proxy import ProxyManager
 from security.importer import PasswordImporter
 
 

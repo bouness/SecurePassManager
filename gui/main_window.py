@@ -1,20 +1,36 @@
 import os
 from datetime import datetime, timedelta
-
-from PySide6.QtCore import QSettings, QSize, Qt, QTimer
-from PySide6.QtGui import QAction, QIcon, QIntValidator, QKeySequence
-from PySide6.QtWidgets import (QApplication, QCheckBox, QComboBox, QDialog,
-                               QDialogButtonBox, QFileDialog, QFormLayout,
-                               QGroupBox, QHBoxLayout, QLabel, QLineEdit,
-                               QListWidget, QListWidgetItem, QMainWindow,
-                               QMessageBox, QProgressBar, QPushButton,
-                               QSplitter, QStatusBar, QToolBar, QVBoxLayout,
-                               QWidget)
+from PySide6.QtWidgets import (
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QPushButton,
+    QListWidget,
+    QLineEdit,
+    QLabel,
+    QFormLayout,
+    QGroupBox,
+    QMessageBox,
+    QSplitter,
+    QListWidgetItem,
+    QToolBar,
+    QStatusBar,
+    QApplication,
+    QProgressBar,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QCheckBox,
+    QFileDialog,
+)
+from PySide6.QtCore import Qt, QTimer, QSize, QSettings
+from PySide6.QtGui import QIcon, QAction, QKeySequence, QIntValidator
 
 from gui.about_dialog import AboutDialog
 from gui.help_dialog import HelpDialog
-from security.exporter import PasswordExporter
 from security.importer import PasswordImporter
+from security.exporter import PasswordExporter
 from utils import resource_path
 
 
@@ -660,10 +676,7 @@ class MainWindow(QMainWindow):
     def update_db_info(self):
         """Update database information in status bar"""
         try:
-            if (
-                not hasattr(self.app_manager.db, "db_path")
-                or not self.app_manager.db.db_path
-            ):
+            if not hasattr(self.app_manager.db, "db_path") or not self.app_manager.db.db_path:
                 self.db_info.setText("Database: Not loaded")
                 return
 
@@ -1278,9 +1291,9 @@ class MainWindow(QMainWindow):
 
                 status = "Enabled" if proxy_settings["enabled"] else "Disabled"
                 scope = "system-wide" if proxy_settings["system_wide"] else "app-only"
-
+                pdp = f"{proxy_settings['host']}:{proxy_settings['port']}"
                 self.status_bar.showMessage(
-                    f"Proxy settings updated: {status} ({scope}, {proxy_settings['type']} {proxy_settings['host']}:{proxy_settings['port']})",
+                    f"Proxy settings updated: {status} ({scope}, {proxy_settings['type']} {pdp})",
                     5000,
                 )
             else:

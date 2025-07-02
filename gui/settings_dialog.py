@@ -283,14 +283,9 @@ class SettingsDialog(QDialog):
             for handler in logger.handlers:
                 if isinstance(handler, logging.FileHandler):
                     return handler.baseFilename
-        except:
+        except Exception:
             pass
         return "logs/SecurePass.log (location unknown)"
-
-    def browse_backup_location(self):
-        path = QFileDialog.getExistingDirectory(self, "Select Backup Directory")
-        if path:
-            self.backup_location.setText(path)
 
     def browse_backup_location(self):
         path = QFileDialog.getExistingDirectory(self, "Select Backup Directory")

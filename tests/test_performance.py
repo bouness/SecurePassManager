@@ -1,5 +1,4 @@
 # tests/test_performance.py
-import os
 import timeit
 import unittest
 
