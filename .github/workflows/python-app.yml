@@ -23,6 +23,17 @@ jobs:
       uses: actions/setup-python@v3
       with:
         python-version: "3.10"
+    - name: Install system dependencies (Qt and libraries)
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          libegl1 \
+          libx11-dev \
+          libglvnd-dev \
+          qtbase5-dev \
+          qtchooser \
+          qtbase5-dev-tools \
+          qtbase5-dev
 
     - name: Install system dependencies (libegl1)
       run: |
