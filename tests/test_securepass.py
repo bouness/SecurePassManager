@@ -278,7 +278,7 @@ class TestFirewallManager(unittest.TestCase):
         # Test Windows-specific blocking logic
         manager = FirewallManager()
         manager.os_type = "Windows"
-        manager._run_windows_block(use_sudo=False)
+        manager._run_windows_block(kwargs={})
         mock_run.assert_called()
         
     @patch('subprocess.run')

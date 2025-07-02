@@ -1,14 +1,14 @@
-import os
 import sys
 import platform
 import subprocess
-import logging
+from utils import setup_logging
+
 
 class FirewallManager:
     def __init__(self):
         self.os_type = platform.system()
         self.active = False
-        self.logger = logging.getLogger("SecurePass")
+        self.logger = setup_logging("SecurePass")
         self.needs_privileges = self._check_privilege_requirement()
     
     def _check_privilege_requirement(self):
@@ -127,7 +127,7 @@ class FirewallManager:
                     text=True
                 )
                 return "Status: Enabled" in result.stdout
-            return status_active    
+            return True    
         except Exception as e:
             self.logger.warning(f"Firewall status check failed: {e}")
             return False

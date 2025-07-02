@@ -1,6 +1,4 @@
 import os
-import platform
-import subprocess
 from datetime import datetime, timedelta
 from PySide6.QtWidgets import (
     QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QListWidget,

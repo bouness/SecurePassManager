@@ -1,5 +1,5 @@
 import os
-import sys
+import logging
 import ctypes
 import base64
 from cryptography.fernet import Fernet

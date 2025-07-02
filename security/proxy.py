@@ -6,7 +6,7 @@ import subprocess
 from PySide6.QtNetwork import QNetworkProxy
 from PySide6.QtCore import QSettings
 
-from utils import get_config_path, get_app_data_dir
+from utils import get_config_path
 
 class ProxyManager:
     def __init__(self):

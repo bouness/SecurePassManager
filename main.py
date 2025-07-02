@@ -1,14 +1,11 @@
 import os
 import sys
 import ctypes
-import logging
 import subprocess
 import platform
 from PySide6.QtWidgets import QApplication, QMessageBox
-from PySide6.QtCore import QTimer
-from PySide6.QtGui import QIcon, QFont
+from PySide6.QtGui import QIcon
 
-from gui.main_window import MainWindow
 from security.crypto import CryptoManager
 from security.firewall import FirewallManager
 from security.proxy import ProxyManager

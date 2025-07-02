@@ -1,15 +1,12 @@
 import os
 import sys
 import logging
-import platform
 import subprocess
 from PySide6.QtWidgets import (
     QDialog, QTabWidget, QWidget, QVBoxLayout, QFormLayout, QSpinBox,
     QCheckBox, QComboBox, QLineEdit, QPushButton, QDialogButtonBox, QLabel, 
     QFileDialog, QMessageBox, QGroupBox, QHBoxLayout
 )
-from PySide6.QtGui import QIntValidator
-from PySide6.QtCore import Qt, QSettings
 from security.proxy import ProxyManager
 
 

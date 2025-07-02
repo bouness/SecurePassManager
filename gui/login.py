@@ -1,12 +1,9 @@
-import os
-
 from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QLineEdit, QPushButton, QLabel, 
     QMessageBox, QCheckBox, QHBoxLayout, QFileDialog,
     QGroupBox, QInputDialog
 )
 from PySide6.QtCore import Qt
-from security.crypto import CryptoManager
 
 
 class LoginWindow(QDialog):

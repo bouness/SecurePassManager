@@ -1,8 +1,5 @@
 import csv
 import json
-from datetime import datetime
-import xml.etree.ElementTree as ET
-from cryptography.fernet import Fernet
 from PySide6.QtWidgets import QProgressDialog, QMessageBox
 from PySide6.QtCore import Qt
 
