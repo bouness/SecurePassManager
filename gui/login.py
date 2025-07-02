@@ -47,6 +47,10 @@ class LoginWindow(QDialog):
         self.master_pwd = QLineEdit()
         self.master_pwd.setEchoMode(QLineEdit.Password)
         self.master_pwd.setPlaceholderText("Master Password")
+        
+        # Connect Enter key to authenticate
+        self.master_pwd.returnPressed.connect(self.authenticate)
+        
         pwd_layout.addWidget(self.master_pwd)
         
         self.show_password = QCheckBox("Show password")
@@ -57,6 +61,10 @@ class LoginWindow(QDialog):
         btn_layout = QHBoxLayout()
         self.btn_unlock = QPushButton("Unlock")
         self.btn_unlock.clicked.connect(self.authenticate)
+        
+        # Set as default button
+        self.btn_unlock.setDefault(True)
+        
         btn_layout.addWidget(self.btn_unlock)
         
         self.btn_create = QPushButton("Create New")
@@ -68,19 +76,6 @@ class LoginWindow(QDialog):
         layout.addWidget(pwd_group)
         
         self.setLayout(layout)
-
-    # def on_login_success(self):
-    #     """Handle successful login"""
-    #     self.close()
-    #     # Show main window
-    #     self.app_manager.main_window = MainWindow(self.app_manager)
-    #     self.app_manager.main_window.show()
-        
-    #     # Initialize backup manager with current database path
-    #     self.app_manager.on_database_unlocked(self.app_manager.db.db_path)
-
-    #     # Log database path
-    #     self.app_manager.logger.info(f"Database unlocked at: {self.app_manager.db.db_path}")
 
     def open_database(self):
         """Open file dialog to select database"""

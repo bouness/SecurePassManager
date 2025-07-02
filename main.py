@@ -18,13 +18,6 @@ from gui.login import LoginWindow
 
 from utils import setup_logging, update_logging_level, resource_path
 
-# logging.basicConfig(
-#     level=logging.DEBUG,
-#     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-#     filename='securepass.log',
-#     filemode='w'
-# )
-
 
 class PasswordManagerApp:
     def __init__(self):
@@ -64,6 +57,7 @@ class PasswordManagerApp:
         
         # Privilege state
         self.has_admin_privileges = self.check_admin_privileges()
+        self.firewall_active = self.firewall.is_active()
         self.privilege_checked = False
     
     def update_logging_level(self, level):
@@ -103,7 +97,7 @@ class PasswordManagerApp:
 
     def run(self):
         # Set application icon
-        app_icon = QIcon(resource_path("assets/icons/logo.png"))
+        app_icon = QIcon(resource_path("assets/icon.png"))
         self.qt_app.setWindowIcon(app_icon)
         
         # Try to enable firewall first
@@ -127,8 +121,19 @@ class PasswordManagerApp:
                 )
                 
                 if result == QMessageBox.Yes:
-                    self.grant_admin_privileges()
-                    return
+                    # Try to grant privileges
+                    grant_success = self.grant_admin_privileges()
+                    
+                    if grant_success:
+                        # Update privilege status and try firewall again
+                        self.has_admin_privileges = True
+                        self.firewall.block_incoming(use_sudo=True)
+                    else:
+                        # Continue with limited functionality
+                        self.logger.warning("Continuing without admin privileges")
+                else:
+                    # User declined privileges - continue normally
+                    self.logger.info("User declined admin privileges")
         
         # Apply proxy settings
         self.proxy.set_application_proxy()
@@ -141,7 +146,7 @@ class PasswordManagerApp:
         self.login_window.show()
         
         sys.exit(self.qt_app.exec())
-    
+
     def on_database_unlocked(self, db_path):
         """Called when database is successfully unlocked"""
         self.logger.info(f"Database unlocked at: {db_path}")
@@ -172,60 +177,66 @@ class PasswordManagerApp:
         )
         
     def grant_admin_privileges(self):
-        """Run specific commands with admin privileges"""
+        """Run specific commands with admin privileges using a GUI password prompt"""
         try:
             if os.name == 'nt':
-                # Windows - run firewall commands with admin privileges
-                commands = [
-                    'netsh advfirewall set allprofiles state on',
-                    'netsh advfirewall set allprofiles firewallpolicy blockinbound,allowoutbound'
-                ]
-                for cmd in commands:
-                    subprocess.run(
-                        f'runas /user:Administrator "{cmd}"',
-                        shell=True,
-                        check=True
-                    )
+                # Windows - re-run with admin privileges
+                self.logger.info("Requesting Windows admin privileges")
+                ctypes.windll.shell32.ShellExecuteW(
+                    None, "runas", sys.executable, " ".join(sys.argv), None, 1
+                )
+                sys.exit(0)
+                return True  # Never reached, but included for completeness
+                
             else:
-                # Unix-like systems - run firewall commands with sudo
-                commands = []
-                os_type = platform.system()
+                # Unix-like systems - use GUI password prompt
+                self.logger.info("Requesting Unix admin privileges")
+                command = " && ".join([
+                    "ufw enable",
+                    "ufw default deny incoming",
+                    "ufw default allow outgoing"
+                ])
                 
-                if os_type == "Linux":
-                    commands = [
-                        "ufw enable",
-                        "ufw default deny incoming",
-                        "ufw default allow outgoing"
-                    ]
-                elif os_type == "Darwin":
-                    commands = [
-                        "pfctl -e",
-                        "pfctl -f /etc/pf.conf"
-                    ]
+                # Use system-specific GUI sudo prompts
+                if platform.system() == "Darwin":
+                    applescript = f'''
+                    do shell script "{command}" 
+                    with administrator privileges
+                    '''
+                    subprocess.run(['osascript', '-e', applescript], check=True)
+                else:  # Linux
+                    subprocess.run([
+                        'pkexec', 'sh', '-c', command
+                    ], check=True)
                 
-                for cmd in commands:
-                    subprocess.run(['sudo', 'sh', '-c', cmd], check=True)
-            
-            # Update privilege status
-            self.has_admin_privileges = True
-            self.firewall.active = True
-            
-            # Restart the application to apply changes
-            QMessageBox.information(
-                None,
-                "Privileges Granted",
-                "Security features have been enabled. The application will now restart."
-            )
-            self.restart_app()
+                # Update privilege status
+                self.has_admin_privileges = True
+                self.firewall.active = True
+                
+                QMessageBox.information(
+                    None,
+                    "Privileges Granted",
+                    "Security features have been enabled."
+                )
+                return True
             
         except subprocess.CalledProcessError as e:
+            self.logger.error(f"Privilege escalation failed: {e}")
             QMessageBox.critical(
                 None,
                 "Privilege Error",
                 f"Failed to grant admin privileges: {str(e)}\n\n"
                 "Please try again or run the application as administrator."
             )
-            self.has_admin_privileges = False
+            return False
+        except Exception as e:
+            self.logger.error(f"Unexpected privilege error: {e}")
+            QMessageBox.critical(
+                None,
+                "Error",
+                f"An unexpected error occurred: {str(e)}"
+            )
+            return False
     
     def restart_app(self):
         """Restart the application"""

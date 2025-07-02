@@ -1,65 +1,79 @@
-# security/firewall.py
 import os
 import sys
 import platform
 import subprocess
-from PySide6.QtWidgets import QMessageBox
+import logging
 
 class FirewallManager:
     def __init__(self):
         self.os_type = platform.system()
         self.active = False
+        self.logger = logging.getLogger("SecurePass")
+        self.needs_privileges = self._check_privilege_requirement()
     
-    def block_incoming(self):
+    def _check_privilege_requirement(self):
+        """Check if firewall requires admin privileges to manage"""
+        try:
+            if self.os_type == "Windows":
+                # Windows Firewall doesn't require elevation for status checks
+                return False
+            elif self.os_type == "Linux":
+                # UFW requires sudo for changes but not for status
+                result = subprocess.run(
+                    ["ufw", "status"], 
+                    capture_output=True, 
+                    text=True
+                )
+                return result.returncode != 0 or "inactive" in result.stdout.lower()
+            elif self.os_type == "Darwin":
+                # PF firewall requires sudo for management
+                result = subprocess.run(
+                    ["pfctl", "-s", "info"], 
+                    capture_output=True, 
+                    text=True
+                )
+                return "Status: Disabled" in result.stdout
+        except Exception as e:
+            self.logger.error(f"Privilege check error: {e}")
+            return True
+        return False
+    
+    def block_incoming(self, use_sudo=False):
         """Block incoming connections with proper privilege handling"""
         try:
             kwargs = {}
             if sys.platform == "win32":
-                # Only add CREATE_NO_WINDOW on Windows
                 kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
 
             if self.os_type == "Windows":
-                subprocess.run(
-                    ["netsh", "advfirewall", "set", "allprofiles", "state", "on"],
-                    check=True,
-                    **kwargs
-                )
-                subprocess.run(
-                    ["netsh", "advfirewall", "set", "allprofiles", "firewallpolicy", "blockinbound,allowoutbound"],
-                    check=True,
-                    **kwargs
-                )
+                self._run_windows_block(kwargs)
                 self.active = True
                 return True
                 
             elif self.os_type == "Linux":
-                subprocess.run(["sudo", "ufw", "enable"], check=True)
-                subprocess.run(["sudo", "ufw", "default", "deny", "incoming"], check=True)
-                subprocess.run(["sudo", "ufw", "default", "allow", "outgoing"], check=True)
+                self._run_linux_block(use_sudo)
                 self.active = True
                 return True
                 
             elif self.os_type == "Darwin":
-                subprocess.run(["sudo", "pfctl", "-e"], check=True)
-                subprocess.run(["sudo", "pfctl", "-f", "/etc/pf.conf"], check=True)
+                self._run_macos_block(use_sudo)
                 self.active = True
                 return True
             
+            # Set active status based on success
             self.active = True
             return True
         except (subprocess.CalledProcessError, FileNotFoundError) as e:
-            # Return False but don't show error here - handled in main app
+            self.logger.error(f"Firewall command failed: {e}")
             self.active = False
             return False        
-        except Exception as e:  # Catch all exceptions
+        except Exception as e:
+            self.logger.exception("Unexpected firewall error")
             self.active = False
             return False
     
-    def _run_windows_block(self):
-        kwargs = {}
-        if os.name == 'nt':
-            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-
+    def _run_windows_block(self, kwargs):
+        """Windows firewall commands"""
         subprocess.run(
             ["netsh", "advfirewall", "set", "allprofiles", "state", "on"],
             check=True,
@@ -71,17 +85,21 @@ class FirewallManager:
             **kwargs
         )
     
-    def _run_linux_block(self):
-        subprocess.run(["sudo", "ufw", "enable"], check=True)
-        subprocess.run(["sudo", "ufw", "default", "deny", "incoming"], check=True)
-        subprocess.run(["sudo", "ufw", "default", "allow", "outgoing"], check=True)
+    def _run_linux_block(self, use_sudo):
+        """Linux UFW commands"""
+        base_cmd = ["sudo"] if use_sudo else []
+        subprocess.run(base_cmd + ["ufw", "enable"], check=True)
+        subprocess.run(base_cmd + ["ufw", "default", "deny", "incoming"], check=True)
+        subprocess.run(base_cmd + ["ufw", "default", "allow", "outgoing"], check=True)
     
-    def _run_macos_block(self):
-        subprocess.run(["sudo", "pfctl", "-e"], check=True)
-        subprocess.run(["sudo", "pfctl", "-f", "/etc/pf.conf"], check=True)
+    def _run_macos_block(self, use_sudo):
+        """macOS PF firewall commands"""
+        base_cmd = ["sudo"] if use_sudo else []
+        subprocess.run(base_cmd + ["pfctl", "-e"], check=True)
+        subprocess.run(base_cmd + ["pfctl", "-f", "/etc/pf.conf"], check=True)
     
     def is_active(self):
-        """Check if firewall is active with better error handling"""
+        """Check if firewall is active without requiring privileges"""
         try:
             if self.os_type == "Windows":
                 result = subprocess.run(
@@ -93,21 +111,24 @@ class FirewallManager:
                 return "ON" in result.stdout and "OFF" not in result.stdout
                 
             elif self.os_type == "Linux":
+                # Non-privileged status check
                 result = subprocess.run(
-                    ["sudo", "ufw", "status", "verbose"],
+                    ["ufw", "status"],
                     capture_output=True,
                     text=True
                 )
-                return "Status: active" in result.stdout and "Default: deny (incoming)" in result.stdout
+                return "Status: active" in result.stdout
                 
             elif self.os_type == "Darwin":
+                # Non-privileged status check
                 result = subprocess.run(
-                    ["sudo", "pfctl", "-s", "info"],
+                    ["pfctl", "-s", "info"],
                     capture_output=True,
                     text=True
                 )
                 return "Status: Enabled" in result.stdout
-                
-        except Exception:
+            return status_active    
+        except Exception as e:
+            self.logger.warning(f"Firewall status check failed: {e}")
             return False
         return False

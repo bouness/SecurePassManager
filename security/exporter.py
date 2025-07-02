@@ -1,4 +1,3 @@
-# security/exporter.py
 import csv
 import json
 from datetime import datetime

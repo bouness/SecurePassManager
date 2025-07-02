@@ -169,7 +169,7 @@ Yes! We support importing from:
 - Bitwarden
 - KeePass
 - Browser exports (Chrome, Firefox, Edge)
-- CSV JSON
+- JSON files
 - CSV files
 
 ## Roadmap: What's Coming Next

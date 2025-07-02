@@ -278,7 +278,7 @@ class TestFirewallManager(unittest.TestCase):
         # Test Windows-specific blocking logic
         manager = FirewallManager()
         manager.os_type = "Windows"
-        manager._run_windows_block()
+        manager._run_windows_block(use_sudo=False)
         mock_run.assert_called()
         
     @patch('subprocess.run')
@@ -286,7 +286,7 @@ class TestFirewallManager(unittest.TestCase):
         # Test Linux-specific blocking logic
         manager = FirewallManager()
         manager.os_type = "Linux"
-        manager._run_linux_block()
+        manager._run_linux_block(use_sudo=False)
         mock_run.assert_called()
         
     @patch('subprocess.run')
@@ -294,7 +294,7 @@ class TestFirewallManager(unittest.TestCase):
         # Test macOS-specific blocking logic
         manager = FirewallManager()
         manager.os_type = "Darwin"
-        manager._run_macos_block()
+        manager._run_macos_block(use_sudo=False)
         mock_run.assert_called()
         
     @patch('subprocess.run')
