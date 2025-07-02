@@ -1,7 +1,8 @@
-import os
 import json
 import logging
+import os
 from datetime import datetime
+
 from cryptography.fernet import Fernet, InvalidToken
 
 
@@ -15,7 +16,7 @@ class SecureDatabase:
         self.cipher = None
         self.password_history = {}
         self.logger = logging.getLogger("SecurePass.database")
-    
+
         # Initialize database if path is provided
         # if db_path and os.path.exists(db_path):
         #     self.initialize()
@@ -25,12 +26,12 @@ class SecureDatabase:
         try:
             if not self.db_path:
                 raise ValueError("Database path not set")
-                
+
             # Generate salt
             self.salt = os.urandom(16)
             key = self.crypto.derive_key(master_password, self.salt)
             self.cipher = Fernet(key)
-            
+
             # Create empty database
             self.data = {}
             self._save_data()
@@ -44,18 +45,18 @@ class SecureDatabase:
             if not self.db_path or not os.path.exists(self.db_path):
                 self.logger.debug(f"Database file not found: {self.db_path}")
                 return False
-                
+
             with open(self.db_path, "rb") as f:
                 encrypted = f.read()
-                
+
             # First 16 bytes are salt
             self.salt = encrypted[:16]
             encrypted_data = encrypted[16:]
-            
+
             # Derive key and initialize cipher
             key = self.crypto.derive_key(master_password, self.salt)
             self.cipher = Fernet(key)
-            
+
             # Decrypt data
             decrypted = self.cipher.decrypt(encrypted_data)
             self.data = json.loads(decrypted)
@@ -75,25 +76,27 @@ class SecureDatabase:
             raise ValueError("Database path not set")
         if not self.cipher:
             raise ValueError("Cipher not initialized")
-            
+
         # Serialize data
         json_data = json.dumps(self.data).encode()
-        
+
         # Encrypt data
         encrypted_data = self.cipher.encrypt(json_data)
-        
+
         # Prepend salt to encrypted data
         with open(self.db_path, "wb") as f:
             f.write(self.salt)
             f.write(encrypted_data)
 
-    def add_password(self, service, username, password, category="Other", url="", notes=""):
+    def add_password(
+        self, service, username, password, category="Other", url="", notes=""
+    ):
         """Add a new password entry"""
         # Check if service already exists
         # if service in self.data:
         #     # Update existing entry instead of creating duplicate
         #     self.update_password(
-        #         service, service, username, password, 
+        #         service, service, username, password,
         #         category, url, notes
         #     )
         #     return
@@ -107,14 +110,14 @@ class SecureDatabase:
                 counter += 1
                 new_service = f"{service} ({counter})"
             service = new_service
-        
+
         # Handle duplicate names
         base_service = service
         counter = 1
         while service in self.data:
             service = f"{base_service} ({counter})"
             counter += 1
-        
+
         # Add the entry
         self.data[service] = {
             "username": username,
@@ -123,7 +126,7 @@ class SecureDatabase:
             "url": url,
             "notes": notes,
             "created": datetime.now().isoformat(),
-            "updated": datetime.now().isoformat()
+            "updated": datetime.now().isoformat(),
         }
         self._save_data()
 
@@ -134,29 +137,33 @@ class SecureDatabase:
     def get_all_entries(self):
         """Get all password entries"""
         return self.data
-        
-    def update_password(self, old_service, new_service, username, password, category, url, notes):
+
+    def update_password(
+        self, old_service, new_service, username, password, category, url, notes
+    ):
         """Update an existing password entry"""
         if old_service not in self.data:
             raise KeyError(f"Service '{old_service}' not found")
 
         if not self.cipher:
             raise ValueError("Database not unlocked")
-            
+
         # Save old password to history
         if old_service in self.data:
             old_entry = self.data[old_service]
             if old_service not in self.password_history:
                 self.password_history[old_service] = []
-            self.password_history[old_service].append({
-                "password": old_entry["password"],
-                "timestamp": datetime.now().isoformat()
-            })
+            self.password_history[old_service].append(
+                {
+                    "password": old_entry["password"],
+                    "timestamp": datetime.now().isoformat(),
+                }
+            )
 
         # If service name changed, remove old entry
         if old_service != new_service and old_service in self.data:
             del self.data[old_service]
-        
+
         # Add/update the entry
         self.data[new_service] = {
             "username": username,
@@ -164,7 +171,7 @@ class SecureDatabase:
             "category": category,
             "url": url,
             "notes": notes,
-            "updated": datetime.now().isoformat()
+            "updated": datetime.now().isoformat(),
         }
         self._save_data()
 

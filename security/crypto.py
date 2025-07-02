@@ -1,21 +1,23 @@
-import os
-import logging
-import ctypes
 import base64
+import ctypes
+import logging
+import os
+
 from cryptography.fernet import Fernet
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+
 
 class CryptoManager:
     def __init__(self):
         self.salt = None
         self.cipher = None
-    
+
     def derive_key(self, password, salt=None):
         """Derive encryption key from password and salt"""
         if salt is None:
             salt = os.urandom(16)
-        
+
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
@@ -47,7 +49,7 @@ class CryptoManager:
         """Get the salt used for the current session"""
         if self.salt:
             return self.salt
-        return os.urandom(16) 
+        return os.urandom(16)
 
     def secure_clear(self, data):
         """Truly secure memory clearing using ctypes"""
@@ -63,4 +65,3 @@ class CryptoManager:
                 ctypes.memset(ctypes.addressof(buffer), 0, len(mutable))
         except Exception as e:
             logging.error(f"Secure clear error: {str(e)}")
-            

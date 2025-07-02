@@ -1,7 +1,6 @@
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QTextEdit, QPushButton
-)
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (QDialog, QLabel, QPushButton, QTextEdit,
+                               QVBoxLayout)
 
 
 class HelpDialog(QDialog):
@@ -18,7 +17,8 @@ class HelpDialog(QDialog):
 
         help_text = QTextEdit()
         help_text.setReadOnly(True)
-        help_text.setHtml("""
+        help_text.setHtml(
+            """
         <h3>🔑 Getting Started</h3>
         <ul>
             <li>Click <b>"Add New"</b> to create a new password entry.</li>
@@ -58,7 +58,8 @@ class HelpDialog(QDialog):
             <li>Report bugs or suggest features on the <b>GitHub Issues</b> page.</li>
             <li>For urgent security concerns, contact the maintainer directly.</li>
         </ul>
-        """)
+        """
+        )
         layout.addWidget(help_text)
 
         close_btn = QPushButton("Close")

@@ -1,8 +1,8 @@
-from PySide6.QtWidgets import (
-    QDialog, QVBoxLayout, QLabel, QPushButton, QTextEdit, QHBoxLayout, QSpacerItem, QSizePolicy
-)
 from PySide6.QtCore import Qt, QUrl
 from PySide6.QtGui import QDesktopServices
+from PySide6.QtWidgets import (QDialog, QHBoxLayout, QLabel, QPushButton,
+                               QSizePolicy, QSpacerItem, QTextEdit,
+                               QVBoxLayout)
 
 
 class AboutDialog(QDialog):
@@ -13,13 +13,16 @@ class AboutDialog(QDialog):
 
         layout = QVBoxLayout(self)
 
-        title_label = QLabel("<h2>🔐 SecurePass Manager - Your Ultimate Digital Vault</h2>")
+        title_label = QLabel(
+            "<h2>🔐 SecurePass Manager - Your Ultimate Digital Vault</h2>"
+        )
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
 
         info_text = QTextEdit()
         info_text.setReadOnly(True)
-        info_text.setHtml("""
+        info_text.setHtml(
+            """
         <p><b>Why Choose SecurePass Manager?</b></p>
         <p>In today's digital world, we juggle countless online accounts—email, banking, social media, work apps. 
         Reusing passwords or choosing weak ones leads to real risks. <b>SecurePass Manager</b> solves this problem 
@@ -41,18 +44,23 @@ class AboutDialog(QDialog):
             <li>Fully offline and open source</li>
             <li>Emergency wipe (self-destruct) support</li>
         </ul>
-        """)
+        """
+        )
 
         layout.addWidget(info_text)
 
         donate_layout = QHBoxLayout()
-        donate_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        donate_layout.addSpacerItem(
+            QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        )
 
         donate_btn = QPushButton("💖 Donate via Venmo")
         donate_btn.clicked.connect(self.open_venmo)
         donate_layout.addWidget(donate_btn)
 
-        donate_layout.addSpacerItem(QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        donate_layout.addSpacerItem(
+            QSpacerItem(40, 20, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        )
         layout.addLayout(donate_layout)
 
     def open_venmo(self):
