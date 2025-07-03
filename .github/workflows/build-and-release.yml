@@ -3,7 +3,7 @@ name: Build and Release SecurePass
 on:
   push:
     tags:
-      - 'v*' # Triggers only on tags like v1.0.0
+      - 'v*'
 
 jobs:
   build-windows:
@@ -23,6 +23,15 @@ jobs:
           python -m pip install --upgrade pip
           pip install nuitka pyside6
           
+      - name: Install Inno Setup
+        run: |
+          $url = "https://jrsoftware.org/download.php/is.exe"
+          $output = "innosetup.exe"
+          Invoke-WebRequest -Uri $url -OutFile $output
+          Start-Process -FilePath $output -ArgumentList "/SILENT" -Wait
+          Write-Host "Inno Setup installed successfully"
+        shell: powershell
+        
       - name: Build project
         run: .\build.bat
         
@@ -34,7 +43,7 @@ jobs:
           
       - name: Create Windows Portable ZIP
         run: |
-          Compress-Archive -Path dist\main.dist\main.exe -DestinationPath dist\SecurePass-Windows-Portable.zip
+          Compress-Archive -Path dist\main.dist\main.exe -DestinationPath dist\SecurePass-Windows-Portable.zip -Force
         shell: powershell
         
       - name: Upload Windows ZIP
