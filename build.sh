@@ -42,7 +42,7 @@ chmod +x dist/main.dist/main.bin
 
 # === Verify build ===
 echo "Verifying build..."
-dist/main.dist/main -c "import cryptography; print('Cryptography OK')" || {
+dist/main.dist/main.bin -c "import cryptography; print('Cryptography OK')" || {
     echo "Build verification failed!"
     exit 1
 }
