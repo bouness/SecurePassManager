@@ -1,30 +1,44 @@
 @echo off
-setlocal
+REM Build script for SecurePass on Windows
 
-REM === Clean previous build ===
-rmdir /S /Q dist
-rmdir /S /Q build
+REM Clean previous builds
+rmdir /s /q dist
+rmdir /s /q build
 
-REM === Install dependencies ===
+REM Install dependencies
 python -m pip install --upgrade nuitka pyside6
 
-REM === Build with Nuitka ===
+REM Compile icon into .res file
+REM windres app.rc -O coff -o app.res
+
+REM Build with Nuitka
 python -m nuitka ^
-  --standalone ^
-  --onefile ^
-  --windows-disable-console ^
-  --enable-plugin=pyside6 ^
-  --include-qt-plugins=sqldrivers,qml ^
-  --include-data-dir=assets=assets ^
-  --include-data-file=version.py=version.py ^
-  --output-dir=dist ^
-  main.py
+    --standalone ^
+    --windows-console-mode=disable ^
+    --enable-plugin=pyside6 ^
+    --include-qt-plugins=sqldrivers,qml ^
+    --include-data-dir=assets=assets ^
+    --include-data-file=version.py=version.py ^
+    --windows-icon-from-ico=icon.ico ^
+    --output-dir=dist ^
+    main.py
 
-REM === Build installer with Inno Setup ===
-if exist "installer_output" rmdir /S /Q installer_output
-mkdir installer_output
+IF %ERRORLEVEL% NEQ 0 (
+    echo Nuitka build failed.
+    pause
+    exit /b %ERRORLEVEL%
+)
 
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\securepass.iss
+echo Nuitka build complete!
 
-echo.
-echo Build complete! Outputs are in /dist and /installer_output
+REM Call Inno Setup to create the installer
+echo Building installer with Inno Setup...
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" securepass.iss
+
+IF %ERRORLEVEL% NEQ 0 (
+    echo Inno Setup failed.
+    pause
+    exit /b %ERRORLEVEL%
+)
+
+echo Installer created successfully!

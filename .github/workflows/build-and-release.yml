@@ -73,7 +73,7 @@ jobs:
           mkdir -p package/SecurePass-$VERSION
           cp -r dist/main.dist package/SecurePass-$VERSION/
           cp -r installer package/SecurePass-$VERSION/
-          cp version.py icon.png assets -r package/SecurePass-$VERSION/ || true
+          cp version.py assets -r package/SecurePass-$VERSION/ || true
           tar -czf SecurePass-$VERSION-linux.tar.gz -C package SecurePass-$VERSION
 
       - name: Upload Linux Package
