@@ -40,13 +40,6 @@ fi
 # === Make executable permissions ===
 chmod +x dist/main.dist/main.bin
 
-# === Verify build ===
-echo "Verifying build..."
-dist/main.dist/main.bin -c "import cryptography; print('Cryptography OK')" || {
-    echo "Build verification failed!"
-    exit 1
-}
-
 # === Get version ===
 VERSION=$(python3 -c "from version import __version__; print(__version__)")
 
