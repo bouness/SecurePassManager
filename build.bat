@@ -38,7 +38,3 @@ IF %ERRORLEVEL% NEQ 0 (
 )
 
 echo Installer created successfully!
-
-REM Create portable ZIP with fixed name
-echo Creating portable ZIP...
-powershell -Command "Compress-Archive -Path dist\main.dist\* -DestinationPath 'dist\SecurePass-Windows-Portable.zip'"
