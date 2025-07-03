@@ -15,10 +15,10 @@ python -m nuitka \
     --follow-imports \
     --assume-yes-for-downloads \
     --include-qt-plugins=sqldrivers,qml \
-    --include-data-dir=src/assets=assets \
+    --include-data-dir=assets=assets \
     --include-data-file=version.py=version.py \
     --output-dir=dist \
-    src/main.py
+    main.py
 
 # Set executable permissions
 chmod +x dist/main.dist/main

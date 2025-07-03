@@ -30,7 +30,7 @@ echo Nuitka build complete!
 
 REM Call Inno Setup to create the installer
 echo Building installer with Inno Setup...
-"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" "/dAPP_VERSION=%VERSION%" securepass.iss
+"C:\Program Files (x86)\Inno Setup 6\ISCC.exe" securepass.iss
 
 IF %ERRORLEVEL% NEQ 0 (
     echo Inno Setup failed.
@@ -39,6 +39,6 @@ IF %ERRORLEVEL% NEQ 0 (
 
 echo Installer created successfully!
 
-REM Create portable ZIP with version in filename
+REM Create portable ZIP with fixed name
 echo Creating portable ZIP...
-powershell -Command "Compress-Archive -Path dist\main.dist\* -DestinationPath 'dist\SecurePass-Windows-Portable-%VERSION%.zip'"
+powershell -Command "Compress-Archive -Path dist\main.dist\* -DestinationPath 'dist\SecurePass-Windows-Portable.zip'"

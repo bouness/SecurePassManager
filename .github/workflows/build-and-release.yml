@@ -11,8 +11,6 @@ jobs:
     runs-on: windows-latest
 
     env:
-      VERSION: ${{ github.ref_name }}
-      ISCC_PATH: "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe"
       NUITKA_ALLOW_DOWNLOADS: yes
 
     steps:
@@ -32,16 +30,25 @@ jobs:
     - name: 🏗️ Build project and installer
       run: .\build.bat
 
+    - name: 🔍 Verify artifacts
+      run: |
+        echo "Checking installer_output:"
+        dir installer_output
+        if not exist "installer_output\SecurePassInstaller.exe" (
+          echo "Installer not found!"
+          exit 1
+        )
+        if not exist "dist\SecurePass-Windows-Portable.zip" (
+          echo "Portable ZIP not found!"
+          exit 1
+        )
+      shell: cmd
+
     - name: 📤 Upload Windows installer
       uses: actions/upload-artifact@v4
       with:
         name: SecurePassInstaller
         path: installer_output/SecurePassInstaller.exe
-
-    - name: 📦 Create Windows Portable ZIP (optional)
-      run: |
-        Compress-Archive -Path dist\main.dist\main.exe -DestinationPath dist\SecurePass-Windows-Portable.zip
-      shell: powershell
 
     - name: 📤 Upload Windows Portable ZIP
       uses: actions/upload-artifact@v4
@@ -50,8 +57,6 @@ jobs:
         path: dist/SecurePass-Windows-Portable.zip
 
   build-linux:
-    env:
-      VERSION: ${{ github.ref_name }}
     name: Build for Linux
     runs-on: ubuntu-latest
 
@@ -74,27 +79,42 @@ jobs:
           chmod +x ./build.sh
           ./build.sh
 
+      - name: 🔍 Verify build output
+        run: |
+          echo "Build contents:"
+          ls -R dist
+          if [ ! -d "dist/main.dist" ]; then
+            echo "ERROR: main.dist directory missing!"
+            exit 1
+          fi
+
       - name: 📦 Create SecurePass tar.gz
         run: |
-          mkdir -p package/SecurePass-${VERSION}
-          cp -r dist/main.dist package/SecurePass-${VERSION}/
-          cp -r assets version.py icon.png package/SecurePass-${VERSION}/ || true
-          cp -r installer package/SecurePass-${VERSION}/
-          tar -czf SecurePass-${VERSION}-linux.tar.gz -C package SecurePass-${VERSION}
+          mkdir -p package/SecurePass
+          cp -r dist/main.dist/* package/SecurePass/
+          cp -r assets version.py icon.png package/SecurePass/ || true
+          cp -r installer package/SecurePass/ || true
+          tar -czf SecurePass-linux.tar.gz -C package SecurePass
+
+      - name: 🔍 Verify tarball
+        run: |
+          if [ ! -f "SecurePass-linux.tar.gz" ]; then
+            echo "Tarball not created!"
+            exit 1
+          fi
+          echo "Tarball contents:"
+          tar -tzvf SecurePass-linux.tar.gz
 
       - name: 📤 Upload tar.gz artifact
         uses: actions/upload-artifact@v4
         with:
           name: SecurePass-Linux-Package
-          path: SecurePass-${VERSION}-linux.tar.gz
+          path: SecurePass-linux.tar.gz
 
   release:
     name: 📦 Create GitHub Release
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
-
-    env:
-      VERSION: ${{ github.ref_name }}
 
     steps:
     - name: 📥 Download all artifacts
@@ -102,14 +122,17 @@ jobs:
       with:
         path: artifacts
 
+    - name: 🗂️ List downloaded files
+      run: ls -R artifacts
+
     - name: 🚀 Publish GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ env.VERSION }}
-        name: SecurePass ${{ env.VERSION }}
+        tag_name: ${{ github.ref_name }}
+        name: SecurePass ${{ github.ref_name }}
         files: |
-          artifacts/SecurePassInstaller/SecurePassInstaller-${{ env.VERSION }}.exe
+          artifacts/SecurePassInstaller/SecurePassInstaller.exe
           artifacts/SecurePass-Windows-Portable/SecurePass-Windows-Portable.zip
-          artifacts/SecurePass-Linux-Package/SecurePass-${{ env.VERSION }}-linux.tar.gz
+          artifacts/SecurePass-Linux-Package/SecurePass-linux.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
