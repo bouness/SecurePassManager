@@ -1,0 +1,10 @@
+[Desktop Entry]
+Name=SecurePass
+Comment=Password Manager Application
+Exec=securepass
+Icon=/opt/securepass/assets/icon.png
+Terminal=false
+Type=Application
+Categories=Utility;Security;
+Keywords=password;security;manager;
+StartupWMClass=SecurePass

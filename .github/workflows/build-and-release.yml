@@ -1,0 +1,112 @@
+name: Build and Release SecurePass
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-windows:
+    name: Build for Windows
+    runs-on: windows-latest
+
+    env:
+      VERSION: ${{ github.ref_name }}
+      ISCC_PATH: "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe"
+
+    steps:
+    - name: 📥 Checkout repository
+      uses: actions/checkout@v4
+
+    - name: 🐍 Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
+
+    - name: 📦 Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install nuitka pyside6
+
+    - name: 🏗️ Build project and installer
+      run: .\build.bat
+
+    - name: 📤 Upload Windows installer
+      uses: actions/upload-artifact@v4
+      with:
+        name: SecurePassInstaller
+        path: installer_output/SecurePassInstaller.exe
+
+    - name: 📦 Create Windows Portable ZIP (optional)
+      run: |
+        Compress-Archive -Path dist\main.dist\main.exe -DestinationPath dist\SecurePass-Windows-Portable.zip
+      shell: powershell
+
+    - name: 📤 Upload Windows Portable ZIP
+      uses: actions/upload-artifact@v4
+      with:
+        name: SecurePass-Windows-Portable
+        path: dist/SecurePass-Windows-Portable.zip
+
+  build-linux:
+    name: Build for Linux
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🐍 Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: 📦 Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install nuitka pyside6
+
+      - name: 🛠️ Build with Nuitka
+        run: |
+          chmod +x ./build.sh
+          ./build.sh
+
+      - name: 📦 Create SecurePass tar.gz
+        run: |
+          mkdir -p package/SecurePass-${VERSION}
+          cp -r dist/main.dist package/SecurePass-${VERSION}/
+          cp -r assets version.py icon.png package/SecurePass-${VERSION}/ || true
+          cp -r installer package/SecurePass-${VERSION}/
+          tar -czf SecurePass-${VERSION}-linux.tar.gz -C package SecurePass-${VERSION}
+
+      - name: 📤 Upload tar.gz artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecurePass-Linux-Package
+          path: SecurePass-${VERSION}-linux.tar.gz
+
+  release:
+    name: 📦 Create GitHub Release
+    needs: [build-windows, build-linux]
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Download all artifacts
+      uses: actions/download-artifact@v4
+      with:
+        path: artifacts
+
+    - name: 🗂️ List downloaded files
+      run: ls -R artifacts
+
+    - name: 🚀 Publish GitHub Release
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${VERSION}
+        name: SecurePass ${VERSION}
+        files: |
+          artifacts/SecurePassInstaller/SecurePassInstaller.exe
+          artifacts/SecurePass-Windows-Portable/SecurePass-Windows-Portable.zip
+          artifacts/SecurePass-Linux-Package/SecurePass-${VERSION}-linux.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
