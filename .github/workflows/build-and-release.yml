@@ -3,136 +3,107 @@ name: Build and Release SecurePass
 on:
   push:
     tags:
-      - 'v*'
+      - 'v*'  # Triggers only on tags like v1.0.0
 
 jobs:
   build-windows:
     name: Build for Windows
     runs-on: windows-latest
 
-    env:
-      NUITKA_ALLOW_DOWNLOADS: yes
-
     steps:
-    - name: 📥 Checkout repository
-      uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-    - name: 🐍 Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
 
-    - name: 📦 Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install nuitka pyside6
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install nuitka pyside6
 
-    - name: 🏗️ Build project and installer
-      run: .\build.bat
+      - name: Build project
+        run: .\build.bat
 
-    - name: 🔍 Verify artifacts
-      run: |
-        echo "Checking installer_output:"
-        dir installer_output
-        if not exist "installer_output\SecurePassInstaller.exe" (
-          echo "Installer not found!"
-          exit 1
-        )
-        if not exist "dist\SecurePass-Windows-Portable.zip" (
-          echo "Portable ZIP not found!"
-          exit 1
-        )
-      shell: cmd
+      - name: Upload Windows Installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecurePassInstaller
+          path: installer_output/SecurePassInstaller.exe
 
-    - name: 📤 Upload Windows installer
-      uses: actions/upload-artifact@v4
-      with:
-        name: SecurePassInstaller
-        path: installer_output/SecurePassInstaller.exe
+      - name: Create Windows Portable ZIP
+        run: |
+          Compress-Archive -Path dist\main.dist\main.exe -DestinationPath dist\SecurePass-Windows-Portable.zip
+        shell: powershell
 
-    - name: 📤 Upload Windows Portable ZIP
-      uses: actions/upload-artifact@v4
-      with:
-        name: SecurePass-Windows-Portable
-        path: dist/SecurePass-Windows-Portable.zip
+      - name: Upload Windows ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: SecurePass-Windows-Portable
+          path: dist/SecurePass-Windows-Portable.zip
 
   build-linux:
     name: Build for Linux
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Checkout repository
+      - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🐍 Set up Python
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.10'
 
-      - name: 📦 Install dependencies
+      - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install nuitka pyside6
 
-      - name: 🛠️ Build with Nuitka
+      - name: Build
         run: |
           chmod +x ./build.sh
           ./build.sh
 
-      - name: 🔍 Verify build output
+      - name: Create Linux tar.gz
         run: |
-          echo "Build contents:"
-          ls -R dist
-          if [ ! -d "dist/main.dist" ]; then
-            echo "ERROR: main.dist directory missing!"
-            exit 1
-          fi
+          VERSION=${GITHUB_REF_NAME}
+          mkdir -p package/SecurePass-$VERSION
+          cp -r dist/main.dist package/SecurePass-$VERSION/
+          cp -r installer package/SecurePass-$VERSION/
+          cp version.py icon.png assets -r package/SecurePass-$VERSION/ || true
+          tar -czf SecurePass-$VERSION-linux.tar.gz -C package SecurePass-$VERSION
 
-      - name: 📦 Create SecurePass tar.gz
-        run: |
-          mkdir -p package/SecurePass
-          cp -r dist/main.dist/* package/SecurePass/
-          cp -r assets version.py icon.png package/SecurePass/ || true
-          cp -r installer package/SecurePass/ || true
-          tar -czf SecurePass-linux.tar.gz -C package SecurePass
-
-      - name: 🔍 Verify tarball
-        run: |
-          if [ ! -f "SecurePass-linux.tar.gz" ]; then
-            echo "Tarball not created!"
-            exit 1
-          fi
-          echo "Tarball contents:"
-          tar -tzvf SecurePass-linux.tar.gz
-
-      - name: 📤 Upload tar.gz artifact
+      - name: Upload Linux Package
         uses: actions/upload-artifact@v4
         with:
           name: SecurePass-Linux-Package
-          path: SecurePass-linux.tar.gz
+          path: SecurePass-*-linux.tar.gz
 
   release:
-    name: 📦 Create GitHub Release
+    name: Create GitHub Release
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
 
     steps:
-    - name: 📥 Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: artifacts
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
 
-    - name: 🗂️ List downloaded files
-      run: ls -R artifacts
+      - name: List Files (debug)
+        run: ls -R artifacts
 
-    - name: 🚀 Publish GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        tag_name: ${{ github.ref_name }}
-        name: SecurePass ${{ github.ref_name }}
-        files: |
-          artifacts/SecurePassInstaller/SecurePassInstaller.exe
-          artifacts/SecurePass-Windows-Portable/SecurePass-Windows-Portable.zip
-          artifacts/SecurePass-Linux-Package/SecurePass-linux.tar.gz
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: SecurePass ${{ github.ref_name }}
+          files: |
+            artifacts/SecurePassInstaller/SecurePassInstaller.exe
+            artifacts/SecurePass-Windows-Portable/SecurePass-Windows-Portable.zip
+            artifacts/SecurePass-Linux-Package/*.tar.gz
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

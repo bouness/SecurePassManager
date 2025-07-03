@@ -1,26 +1,29 @@
 #!/bin/bash
-# Build script for SecurePass (./build.sh)
-set -e  # Exit immediately on error
+set -e
 
-# Clean build environment
-rm -rf dist build || true
+# === Clean previous builds ===
+rm -rf dist build package
+mkdir -p dist
 
-# Install dependencies
-python -m pip install --upgrade nuitka pyside6
+# === Install dependencies ===
+python3 -m pip install --upgrade nuitka pyside6
 
-# Build with Nuitka
-python -m nuitka \
-    --standalone \
-    --enable-plugin=pyside6 \
-    --follow-imports \
-    --assume-yes-for-downloads \
-    --include-qt-plugins=sqldrivers,qml \
-    --include-data-dir=assets=assets \
-    --include-data-file=version.py=version.py \
-    --output-dir=dist \
-    main.py
+# === Build with Nuitka ===
+python3 -m nuitka \
+  --standalone \
+  --enable-plugin=pyside6 \
+  --follow-imports \
+  --assume-yes-for-downloads \
+  --include-qt-plugins=sqldrivers,qml \
+  --include-data-dir=assets=assets \
+  --include-data-file=version.py=version.py \
+  --output-dir=dist \
+  main.py
 
-# Set executable permissions
-chmod +x dist/main.dist/main
+# === Make executable permissions ===
+chmod +x dist/main.dist/main.bin
 
-echo "Build complete! Install with: sudo ./installer/install.sh"
+echo
+echo "✅ Linux build complete!"
+echo "Run with: ./dist/main.dist/main"
+echo "Install with: sudo ./installer/install.sh"
