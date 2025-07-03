@@ -11,7 +11,7 @@ Compression=lzma
 SolidCompression=yes
 DisableProgramGroupPage=yes
 UninstallDisplayIcon={app}\main.exe
-ArchitecturesInstallIn64BitMode=x64compatible
+ArchitecturesInstallIn64BitMode=x64
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"

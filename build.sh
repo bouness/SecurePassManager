@@ -1,8 +1,9 @@
 #!/bin/bash
 # Build script for SecurePass (./build.sh)
+set -e  # Exit immediately on error
 
 # Clean build environment
-rm -rf dist build
+rm -rf dist build || true
 
 # Install dependencies
 python -m pip install --upgrade nuitka pyside6
