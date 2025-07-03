@@ -1,11 +1,15 @@
 #!/bin/bash
-# securepass installer
+# securepass installer for compiled release
 
+set -e
+
+# Get version from version.py
+VERSION=$(python3 -c "from version import __version__; print(__version__)")
 APP_NAME="securepass"
-VERSION="1.0.0"
-INSTALL_DIR="/opt/$APP_NAME"
+INSTALL_DIR="/opt/$APP_NAME-$VERSION"
 BIN_PATH="/usr/local/bin/$APP_NAME"
 DESKTOP_FILE="/usr/share/applications/$APP_NAME.desktop"
+ICON_PATH="$INSTALL_DIR/assets/icon.png"
 
 # Check root privileges
 if [ "$(id -u)" -ne 0 ]; then
@@ -14,50 +18,45 @@ if [ "$(id -u)" -ne 0 ]; then
 fi
 
 # Create installation directory
+echo "Creating installation directory: $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
-if [ $? -ne 0 ]; then
-    echo "Failed to create installation directory"
-    exit 1
-fi
 
-# Copy application files
-cp -r dist/main.dist/* "$INSTALL_DIR"
-if [ $? -ne 0 ]; then
-    echo "Failed to copy application files"
-    exit 1
-fi
+# Copy application files from current directory
+echo "Copying application files..."
+cp -r ./* "$INSTALL_DIR" || true
+
+# Remove installer directory from installation
+rm -rf "$INSTALL_DIR/installer"
 
 # Create executable symlink
+echo "Creating executable symlink..."
 ln -sf "$INSTALL_DIR/main" "$BIN_PATH"
-if [ $? -ne 0 ]; then
-    echo "Failed to create binary symlink"
-    exit 1
-fi
 
-# Install desktop entry
-cp "installer/$APP_NAME.desktop" "$DESKTOP_FILE"
-if [ $? -ne 0 ]; then
-    echo "Failed to install desktop entry"
-    exit 1
-fi
-
-# Create proper launcher script
-cat > "$INSTALL_DIR/$APP_NAME" <<EOL
-#!/bin/sh
-exec "$INSTALL_DIR/main.bin" "\$@"
+# Create desktop entry
+echo "Creating desktop entry..."
+cat > "$DESKTOP_FILE" <<EOL
+[Desktop Entry]
+Name=SecurePass
+Comment=Password Manager Application
+Exec=$BIN_PATH
+Icon=$ICON_PATH
+Terminal=false
+Type=Application
+Categories=Utility;Security;
+Keywords=password;security;manager;
+StartupWMClass=SecurePass
 EOL
 
-# Make launcher executable
-chmod +x "$INSTALL_DIR/$APP_NAME"
-
-# Create symlink to launcher
-ln -sf "$INSTALL_DIR/$APP_NAME" "$BIN_PATH"
+# Fix icon path in the desktop file if needed
+sed -i "s|/opt/securepass/assets/icon.png|$ICON_PATH|g" "$DESKTOP_FILE"
 
 # Update desktop database
-update-desktop-database /usr/share/applications
+echo "Updating desktop database..."
+update-desktop-database /usr/share/applications || true
 
 echo "=============================================="
 echo "$APP_NAME $VERSION installed successfully!"
+echo "Installation directory: $INSTALL_DIR"
 echo "Run command: $APP_NAME"
 echo "Find in your application menu: SecurePass"
 echo "=============================================="
