@@ -2,18 +2,16 @@
 REM Build script for SecurePass on Windows
 
 REM Clean previous builds
-rmdir /s /q dist
-rmdir /s /q build
+rmdir /s /q dist 2>nul
+rmdir /s /q build 2>nul
 
 REM Install dependencies
 python -m pip install --upgrade nuitka pyside6
 
-REM Compile icon into .res file
-REM windres app.rc -O coff -o app.res
-
 REM Build with Nuitka
 python -m nuitka ^
     --standalone ^
+    --assume-yes-for-downloads ^
     --windows-console-mode=disable ^
     --enable-plugin=pyside6 ^
     --include-qt-plugins=sqldrivers,qml ^
@@ -25,7 +23,6 @@ python -m nuitka ^
 
 IF %ERRORLEVEL% NEQ 0 (
     echo Nuitka build failed.
-    pause
     exit /b %ERRORLEVEL%
 )
 
@@ -37,8 +34,11 @@ echo Building installer with Inno Setup...
 
 IF %ERRORLEVEL% NEQ 0 (
     echo Inno Setup failed.
-    pause
     exit /b %ERRORLEVEL%
 )
 
 echo Installer created successfully!
+
+REM Create portable ZIP with fixed name
+echo Creating portable ZIP...
+powershell -Command "Compress-Archive -Path dist\main.dist\* -DestinationPath 'dist\SecurePass-Windows-Portable.zip'"
