@@ -2,11 +2,11 @@
 
 [Setup]
 AppName=SecurePass Manager
-AppVersion=1.0.0
+AppVersion={#APP_VERSION}
 DefaultDirName={autopf}\SecurePass
 DefaultGroupName=SecurePass
 OutputDir=installer_output
-OutputBaseFilename=SecurePassInstaller
+OutputBaseFilename=SecurePassInstaller-{#APP_VERSION}
 Compression=lzma
 SolidCompression=yes
 DisableProgramGroupPage=yes

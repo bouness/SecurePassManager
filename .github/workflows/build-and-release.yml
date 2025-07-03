@@ -13,6 +13,7 @@ jobs:
     env:
       VERSION: ${{ github.ref_name }}
       ISCC_PATH: "C:\\Program Files (x86)\\Inno Setup 6\\ISCC.exe"
+      NUITKA_ALLOW_DOWNLOADS: yes
 
     steps:
     - name: 📥 Checkout repository
@@ -49,6 +50,8 @@ jobs:
         path: dist/SecurePass-Windows-Portable.zip
 
   build-linux:
+    env:
+      VERSION: ${{ github.ref_name }}
     name: Build for Linux
     runs-on: ubuntu-latest
 
@@ -90,23 +93,23 @@ jobs:
     needs: [build-windows, build-linux]
     runs-on: ubuntu-latest
 
+    env:
+      VERSION: ${{ github.ref_name }}
+
     steps:
     - name: 📥 Download all artifacts
       uses: actions/download-artifact@v4
       with:
         path: artifacts
 
-    - name: 🗂️ List downloaded files
-      run: ls -R artifacts
-
     - name: 🚀 Publish GitHub Release
       uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${VERSION}
-        name: SecurePass ${VERSION}
+        tag_name: ${{ env.VERSION }}
+        name: SecurePass ${{ env.VERSION }}
         files: |
-          artifacts/SecurePassInstaller/SecurePassInstaller.exe
+          artifacts/SecurePassInstaller/SecurePassInstaller-${{ env.VERSION }}.exe
           artifacts/SecurePass-Windows-Portable/SecurePass-Windows-Portable.zip
-          artifacts/SecurePass-Linux-Package/SecurePass-${VERSION}-linux.tar.gz
+          artifacts/SecurePass-Linux-Package/SecurePass-${{ env.VERSION }}-linux.tar.gz
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
