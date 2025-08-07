@@ -3,13 +3,24 @@ import os
 import subprocess
 import sys
 
-from PySide6.QtWidgets import (QCheckBox, QComboBox, QDialog, QDialogButtonBox,
-                               QFileDialog, QFormLayout, QGroupBox,
-                               QHBoxLayout, QLabel, QLineEdit, QMessageBox,
-                               QPushButton, QSpinBox, QTabWidget, QVBoxLayout,
-                               QWidget)
-
-from security.proxy import ProxyManager
+from PySide6.QtWidgets import (
+    QCheckBox,
+    QComboBox,
+    QDialog,
+    QDialogButtonBox,
+    QFileDialog,
+    QFormLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QMessageBox,
+    QPushButton,
+    QSpinBox,
+    QTabWidget,
+    QVBoxLayout,
+    QWidget,
+)
 
 
 class SettingsDialog(QDialog):
@@ -51,9 +62,6 @@ class SettingsDialog(QDialog):
         main_layout.addWidget(self.tab_widget)
         main_layout.addWidget(self.button_box)
 
-        # Create proxy manager for unified settings
-        self.proxy_manager = ProxyManager()
-
         # Load current settings
         self.load_settings()
 
@@ -67,22 +75,6 @@ class SettingsDialog(QDialog):
 
     def setup_security_tab(self, tab):
         layout = QFormLayout(tab)
-
-        # Firewall status
-        firewall_status = (
-            "Active" if self.app_manager.firewall.is_active() else "Inactive"
-        )
-        self.status_label = QLabel(firewall_status)
-        layout.addRow("Firewall Status:", self.status_label)
-
-        # Firewall control
-        self.firewall_btn = QPushButton(
-            "Enable Firewall"
-            if not self.app_manager.firewall.is_active()
-            else "Disable Firewall"
-        )
-        self.firewall_btn.clicked.connect(self.toggle_firewall)
-        layout.addRow("Firewall Control:", self.firewall_btn)
 
         # Password policy
         self.policy_combo = QComboBox()
@@ -118,7 +110,11 @@ class SettingsDialog(QDialog):
         # Password visibility
         self.password_visibility = QComboBox()
         self.password_visibility.addItems(
-            ["Always masked", "Show when editing", "Always visible"]
+            [
+                "Always masked",
+                "Show when editing",
+                "Always visible",
+            ]
         )
         layout.addRow("Password Visibility:", self.password_visibility)
 
@@ -328,39 +324,6 @@ class SettingsDialog(QDialog):
                 # Revert to original path
                 self.app_manager.db.db_path = original_path
 
-    def toggle_firewall(self):
-        if self.app_manager.firewall.is_active():
-            # Show disable confirmation
-            reply = QMessageBox.question(
-                self,
-                "Disable Firewall",
-                "Are you sure you want to disable the firewall?\n\n"
-                "This will make your system more vulnerable to network attacks.",
-                QMessageBox.Yes | QMessageBox.No,
-            )
-            if reply == QMessageBox.Yes:
-                # Implement disable logic in firewall manager
-                # For now, just update UI
-                self.status_label.setText("Inactive")
-                self.firewall_btn.setText("Enable Firewall")
-                QMessageBox.information(
-                    self, "Firewall Disabled", "Firewall has been disabled."
-                )
-        else:
-            # Try to enable firewall
-            if self.app_manager.firewall.block_incoming():
-                self.status_label.setText("Active")
-                self.firewall_btn.setText("Disable Firewall")
-                QMessageBox.information(
-                    self, "Firewall Enabled", "Firewall has been successfully enabled."
-                )
-            else:
-                QMessageBox.warning(
-                    self,
-                    "Firewall Error",
-                    "Could not enable firewall. Administrator privileges required.",
-                )
-
     def load_settings(self):
         """Load current settings from settings.ini"""
         # Security settings
@@ -373,7 +336,7 @@ class SettingsDialog(QDialog):
         self.password_visibility.setCurrentIndex(0)
 
         # Load logging configuration
-        log_config = self.app_manager.proxy.settings.get(
+        log_config = self.app_manager.settings.get(
             "Logging/config", "Minimal logging"
         )
         index = self.logging_config.findText(log_config)
@@ -381,7 +344,7 @@ class SettingsDialog(QDialog):
             self.logging_config.setCurrentIndex(index)
 
         # Load logging level
-        log_level = self.app_manager.proxy.settings.get("Logging/level", "INFO")
+        log_level = self.app_manager.settings.get("Logging/level", "INFO")
         index = self.logging_level.findText(log_level)
         if index >= 0:
             self.logging_level.setCurrentIndex(index)
@@ -389,7 +352,7 @@ class SettingsDialog(QDialog):
         self.clear_on_lock.setChecked(True)
 
         # Advanced settings - Load from unified settings
-        settings = self.app_manager.proxy.settings
+        settings = self.app_manager.settings
 
         # Load backup settings
         self.backup_enable.setChecked(bool(settings.get("Backup/enabled", False)))
@@ -406,9 +369,7 @@ class SettingsDialog(QDialog):
         """Apply settings without closing dialog"""
         # Security settings
         self.app_manager.password_policy = self.policy_combo.currentIndex()
-        self.app_manager.lock_timeout = (
-            self.lock_timeout.value() * 60
-        )  # Convert to seconds
+        self.app_manager.lock_timeout = self.lock_timeout.value() * 60  # Convert to seconds
 
         # Privacy settings
         self.app_manager.clipboard_timeout = self.clipboard_timeout.value()
@@ -428,7 +389,7 @@ class SettingsDialog(QDialog):
             return
 
         # Create a copy of current settings
-        new_settings = self.app_manager.proxy.settings.copy()
+        new_settings = self.app_manager.settings.copy()
 
         # Add logging settings
         new_settings.update(
@@ -450,7 +411,7 @@ class SettingsDialog(QDialog):
         )
 
         # Save to settings.ini
-        if not self.app_manager.proxy.save_settings(new_settings):
+        if not self.app_manager.save_settings(new_settings):
             QMessageBox.warning(
                 self,
                 "Settings Error",
@@ -458,7 +419,7 @@ class SettingsDialog(QDialog):
             )
         else:
             # Update in-memory settings
-            self.app_manager.proxy.settings = new_settings
+            self.app_manager.settings = new_settings
 
             # Update backup manager
             self.app_manager.backup_manager.update_settings(

@@ -231,158 +231,6 @@ class ExportDialog(QDialog):
             QTimer.singleShot(3000, self.accept)
 
 
-class ProxySettingsDialog(QDialog):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        self.setWindowTitle("Proxy Settings")
-        self.setFixedSize(400, 350)  # Increased height for new checkbox
-
-        layout = QFormLayout(self)
-
-        # Enable proxy checkbox
-        self.enable_proxy = QCheckBox("Enable Proxy")
-        layout.addRow(self.enable_proxy)
-
-        # Proxy type
-        self.proxy_type = QComboBox()
-        self.proxy_type.addItems(["HTTP", "HTTPS", "SOCKS5"])
-        layout.addRow("Proxy Type:", self.proxy_type)
-
-        # Host and Port
-        self.host_input = QLineEdit()
-        self.host_input.setPlaceholderText("proxy.example.com")
-        layout.addRow("Host:", self.host_input)
-
-        self.port_input = QLineEdit()
-        self.port_input.setPlaceholderText("8080")
-        self.port_input.setValidator(QIntValidator(1, 65535, self))
-        layout.addRow("Port:", self.port_input)
-
-        # Authentication
-        self.auth_checkbox = QCheckBox("Requires Authentication")
-        layout.addRow(self.auth_checkbox)
-
-        self.username_input = QLineEdit()
-        self.username_input.setPlaceholderText("Username")
-        layout.addRow("Username:", self.username_input)
-
-        self.password_input = QLineEdit()
-        self.password_input.setPlaceholderText("Password")
-        self.password_input.setEchoMode(QLineEdit.Password)
-        layout.addRow("Password:", self.password_input)
-
-        # System-wide proxy checkbox
-        self.system_wide_checkbox = QCheckBox(
-            "Apply System-wide (Admin may be required)"
-        )
-        layout.addRow(self.system_wide_checkbox)
-
-        # Info label
-        self.info_label = QLabel(
-            "Note: System-wide proxy requires admin privileges on some systems"
-        )
-        self.info_label.setWordWrap(True)
-        self.info_label.setStyleSheet("color: #666; font-size: 10pt;")
-        layout.addRow(self.info_label)
-
-        # Buttons
-        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        button_box.accepted.connect(self.accept)
-        button_box.rejected.connect(self.reject)
-        layout.addRow(button_box)
-
-        # Load current settings
-        self.load_settings()
-
-        # Connect auth checkbox to enable/disable auth fields
-        self.auth_checkbox.toggled.connect(self.toggle_auth_fields)
-        self.toggle_auth_fields(self.auth_checkbox.isChecked())
-
-        # Connect enable proxy to enable/disable all fields
-        self.enable_proxy.toggled.connect(self.toggle_proxy_fields)
-        self.toggle_proxy_fields(self.enable_proxy.isChecked())
-
-    def toggle_auth_fields(self, checked):
-        self.username_input.setEnabled(checked)
-        self.password_input.setEnabled(checked)
-
-    def toggle_proxy_fields(self, checked):
-        self.proxy_type.setEnabled(checked)
-        self.host_input.setEnabled(checked)
-        self.port_input.setEnabled(checked)
-        self.auth_checkbox.setEnabled(checked)
-        self.system_wide_checkbox.setEnabled(checked)
-        self.toggle_auth_fields(checked and self.auth_checkbox.isChecked())
-
-    def load_settings(self):
-        """Load settings from ProxyManager"""
-        proxy_manager = self.parent().app_manager.proxy
-        settings = proxy_manager.settings
-
-        # Ensure boolean values are properly handled
-        self.enable_proxy.setChecked(bool(settings["enabled"]))
-        self.proxy_type.setCurrentText(settings["type"])
-        self.host_input.setText(settings["host"])
-        self.port_input.setText(settings["port"])
-        self.auth_checkbox.setChecked(bool(settings["auth_enabled"]))
-        self.username_input.setText(settings["username"])
-        self.password_input.setText(settings["password"])
-        self.system_wide_checkbox.setChecked(bool(settings["system_wide"]))
-
-    def get_proxy_settings(self):
-        """Return proxy settings as a dictionary"""
-        return {
-            "enabled": self.enable_proxy.isChecked(),
-            "type": self.proxy_type.currentText(),
-            "host": self.host_input.text().strip(),
-            "port": self.port_input.text().strip(),
-            "auth_enabled": self.auth_checkbox.isChecked(),
-            "username": self.username_input.text().strip(),
-            "password": self.password_input.text(),
-            "system_wide": self.system_wide_checkbox.isChecked(),
-        }
-
-    def accept(self):
-        # Validate input
-        if self.enable_proxy.isChecked():
-            host = self.host_input.text().strip()
-            port = self.port_input.text().strip()
-
-            if not host:
-                QMessageBox.warning(
-                    self, "Invalid Input", "Host is required when proxy is enabled."
-                )
-                return
-
-            if not port:
-                QMessageBox.warning(self, "Invalid Input", "Port is required.")
-                return
-
-            if self.auth_checkbox.isChecked():
-                username = self.username_input.text().strip()
-                if not username:
-                    QMessageBox.warning(
-                        self,
-                        "Invalid Input",
-                        "Username is required for authentication.",
-                    )
-                    return
-
-        super().accept()
-
-    def save_settings(self):
-        settings = QSettings("SecurePass", "SecurePass Manager")
-        settings.beginGroup("Proxy")
-        settings.setValue("enabled", self.enable_proxy.isChecked())
-        settings.setValue("type", self.proxy_type.currentText())
-        settings.setValue("host", self.host_input.text().strip())
-        settings.setValue("port", self.port_input.text().strip())
-        settings.setValue("auth_enabled", self.auth_checkbox.isChecked())
-        settings.setValue("username", self.username_input.text().strip())
-        settings.setValue("password", self.password_input.text())
-        settings.endGroup()
-
-
 class MainWindow(QMainWindow):
     def __init__(self, app_manager):
         super().__init__()
@@ -512,11 +360,6 @@ class MainWindow(QMainWindow):
         self.notes_input.setPlaceholderText("Additional information")
         details_layout.addRow("Notes:", self.notes_input)
 
-        # Save button
-        # self.btn_save = QPushButton("Save Changes")
-        # self.btn_save.clicked.connect(self.save_password)
-        # details_layout.addRow(self.btn_save)
-
         # Save/Cancel buttons
         btn_save_layout = QHBoxLayout()
         self.btn_save = QPushButton("Save")
@@ -604,9 +447,6 @@ class MainWindow(QMainWindow):
         )
         self.clipboard_progress.setVisible(False)
         self.status_bar.addPermanentWidget(self.clipboard_progress)
-
-        # Allow service name editing
-        # self.service_input.setEnabled(True)
 
         # Add backup status to status bar
         self.backup_status = QLabel()
@@ -717,11 +557,9 @@ class MainWindow(QMainWindow):
 
         backup_icon = resource_path("assets/icons/backup.png")
         export_icon = resource_path("assets/icons/export.png")
-        firewall_icon = resource_path("assets/icons/firewall.png")
         key_icon = resource_path("assets/icons/key.png")
         import_icon = resource_path("assets/icons/import.png")
         lock_icon = resource_path("assets/icons/lock.png")
-        proxy_icon = resource_path("assets/icons/proxy.png")
         settings_icon = resource_path("assets/icons/settings.png")
         about_icon = resource_path("assets/icons/about.png")
         help_icon = resource_path("assets/icons/help.png")
@@ -730,16 +568,6 @@ class MainWindow(QMainWindow):
         lock_action = QAction(QIcon(lock_icon), "Lock Database", self)
         lock_action.triggered.connect(self.lock_database)
         toolbar.addAction(lock_action)
-        toolbar.addSeparator()
-
-        firewall_action = QAction(QIcon(firewall_icon), "Firewall Status", self)
-        firewall_action.triggered.connect(self.show_firewall_status)
-        toolbar.addAction(firewall_action)
-        toolbar.addSeparator()
-
-        proxy_action = QAction(QIcon(proxy_icon), "Proxy Settings", self)
-        proxy_action.triggered.connect(self.configure_proxy)
-        toolbar.addAction(proxy_action)
         toolbar.addSeparator()
 
         # Backup action
@@ -796,11 +624,11 @@ class MainWindow(QMainWindow):
 
         # Get current backup settings
         backup_settings = {
-            "enabled": self.app_manager.proxy.settings.get("Backup/enabled", False),
-            "frequency": self.app_manager.proxy.settings.get(
+            "enabled": self.app_manager.settings.get("Backup/enabled", False),
+            "frequency": self.app_manager.settings.get(
                 "Backup/frequency", "Daily"
             ),
-            "location": self.app_manager.proxy.settings.get("Backup/location", ""),
+            "location": self.app_manager.settings.get("Backup/location", ""),
         }
 
         # Validate location
@@ -1146,14 +974,15 @@ class MainWindow(QMainWindow):
             QTimer.singleShot(1000, lambda: self.btn_copy_pass.setStyleSheet(""))
 
             # Start clipboard countdown
-            self.clipboard_seconds_left = 30
-            self.clipboard_progress.setValue(30)
+            self.clipboard_seconds_left = self.app_manager.clipboard_timeout
+            self.clipboard_progress.setMaximum(self.app_manager.clipboard_timeout)
+            self.clipboard_progress.setValue(self.clipboard_seconds_left)
             self.clipboard_progress.setVisible(True)
             self.clipboard_progress.setFormat(
                 f"Clearing in {self.clipboard_seconds_left}s"
             )
             self.status_bar.showMessage(
-                "Password copied to clipboard - will clear in 30 seconds", 3000
+                f"Password copied to clipboard - will clear in {self.app_manager.clipboard_timeout} seconds", 3000
             )
 
             # Start the timer
@@ -1246,63 +1075,6 @@ class MainWindow(QMainWindow):
         self.login_window.show()
         self.close()
 
-    def show_firewall_status(self):
-        """Display firewall status information"""
-        status = "Active" if self.app_manager.firewall.is_active() else "Inactive"
-        protection = (
-            "Full system protection" if status == "Active" else "Limited protection"
-        )
-
-        message = (
-            f"Firewall Status: {status}\n"
-            f"Protection Level: {protection}\n\n"
-            "Incoming connections are blocked when firewall is active."
-        )
-
-        QMessageBox.information(self, "Firewall Status", message)
-
-    def configure_proxy(self):
-        """Open proxy configuration dialog"""
-        dialog = ProxySettingsDialog(self)
-        if dialog.exec() == QDialog.Accepted:
-            proxy_settings = dialog.get_proxy_settings()
-
-            # Ensure correct types before saving
-            proxy_settings["enabled"] = bool(proxy_settings["enabled"])
-            proxy_settings["auth_enabled"] = bool(proxy_settings["auth_enabled"])
-            proxy_settings["system_wide"] = bool(proxy_settings["system_wide"])
-
-            # Save and apply the new settings
-            if self.app_manager.proxy.save_settings(proxy_settings):
-                self.app_manager.proxy.settings = proxy_settings
-
-                # Apply application-level proxy
-                self.app_manager.proxy.set_application_proxy()
-
-                # Apply system-wide proxy if requested
-                if proxy_settings["system_wide"] and proxy_settings["enabled"]:
-                    success = self.app_manager.proxy.set_system_proxy()
-                    if not success:
-                        QMessageBox.warning(
-                            self,
-                            "Proxy Error",
-                            "Failed to set system-wide proxy. You may need administrator privileges.",
-                        )
-
-                status = "Enabled" if proxy_settings["enabled"] else "Disabled"
-                scope = "system-wide" if proxy_settings["system_wide"] else "app-only"
-                pdp = f"{proxy_settings['host']}:{proxy_settings['port']}"
-                self.status_bar.showMessage(
-                    f"Proxy settings updated: {status} ({scope}, {proxy_settings['type']} {pdp})",
-                    5000,
-                )
-            else:
-                QMessageBox.warning(
-                    self,
-                    "Proxy Error",
-                    "Failed to save proxy settings. Please check application logs.",
-                )
-
     def open_settings(self):
         """Open application settings"""
         from gui.settings_dialog import SettingsDialog
@@ -1312,12 +1084,5 @@ class MainWindow(QMainWindow):
 
     def show_help(self):
         """Show help information"""
-        # QMessageBox.information(self, "Help",
-        # "SecurePass Manager Help\n\n"
-        # "1. Add new passwords using the 'Add New' button\n"
-        # "2. Select a password to view or edit its details\n"
-        # "3. Use the copy buttons to copy credentials to clipboard\n"
-        # "4. Generate strong passwords with Ctrl+G\n"
-        # "5. Lock the database with Ctrl+L when leaving your computer")
         dialog = HelpDialog(self)
         dialog.exec()

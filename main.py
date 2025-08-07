@@ -1,46 +1,33 @@
-import ctypes
-import os
-import platform
-import subprocess
 import sys
 
 from PySide6.QtGui import QIcon
-from PySide6.QtWidgets import QApplication, QMessageBox
+from PySide6.QtWidgets import QApplication
+from PySide6.QtCore import QSettings
 
 from gui.login import LoginWindow
 from security.backup_manager import BackupManager
 from security.crypto import CryptoManager
 from security.database import SecureDatabase
-from security.firewall import FirewallManager
-from security.proxy import ProxyManager
-from utils import resource_path, setup_logging, update_logging_level
+from utils import resource_path, setup_logging, update_logging_level, get_config_path
 
 
 class PasswordManagerApp:
     def __init__(self):
-        # Initialize proxy manager first to get logging settings
-        self.proxy = ProxyManager()
-
-        # Log settings for verification
-        # print("Proxy Manager Settings:", self.proxy.settings)
-
-        # Setup logging with level from settings
-        log_level = self.proxy.settings.get("Logging/level", "INFO")
-        self.logger = setup_logging("SecurePass", log_level=log_level)
+        # Setup logging first
+        self.logger = setup_logging("SecurePass", log_level="INFO")
         self.logger.info("Application starting")
-        self.logger.debug(f"Initial settings: {self.proxy.settings}")
 
-        # Setup logging with level from settings
-        log_level = self.proxy.settings.get("Logging/level", "INFO")
-        self.logger = setup_logging("SecurePass", log_level=log_level)
-        self.logger.info("Application starting")
+        self.config_path = get_config_path()
+        self.settings = {}
+        self.load_settings() # Now logger is available
+
+        self.logger.debug(f"Initial settings: {self.settings}")
 
         self.qt_app = QApplication(sys.argv)
         self.qt_app.aboutToQuit.connect(self.on_exit)
 
         # Initialize components
         self.crypto = CryptoManager()
-        self.firewall = FirewallManager()
 
         # Initialize database without path - will be set later
         self.db = SecureDatabase(self.crypto, db_path=None)
@@ -52,10 +39,91 @@ class PasswordManagerApp:
         # Set clipboard timeout default
         self.clipboard_timeout = 30
 
-        # Privilege state
-        self.has_admin_privileges = self.check_admin_privileges()
-        self.firewall_active = self.firewall.is_active()
-        self.privilege_checked = False
+    def load_settings(self):
+        """Load settings from config file using cross-platform location"""
+        self.logger.debug(f"Loading settings from: {self.config_path}")
+        settings = QSettings(str(self.config_path), QSettings.IniFormat)
+
+        # Create settings dictionary with defaults and proper types
+        self.settings = {
+            "Backup/enabled": False,
+            "Backup/frequency": "Daily",
+            "Backup/location": "",
+            "Logging/config": "Minimal logging",
+            "Logging/level": "INFO",
+        }
+
+        try:
+            # Load backup settings with type conversion
+            settings.beginGroup("Backup")
+            self.settings["Backup/enabled"] = settings.value(
+                "enabled", False, type=bool
+            )
+            self.settings["Backup/frequency"] = settings.value(
+                "frequency", "Daily", type=str
+            )
+            self.settings["Backup/location"] = settings.value("location", "", type=str)
+            settings.endGroup()
+
+            # Load logging settings
+            settings.beginGroup("Logging")
+            self.settings["Logging/config"] = settings.value(
+                "config", "Minimal logging", type=str
+            )
+            log_level = settings.value("level", "INFO", type=str)
+            if log_level in ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]:
+                self.settings["Logging/level"] = log_level
+            else:
+                self.settings["Logging/level"] = "INFO"  # Enforce valid value
+            settings.endGroup()
+
+            self.logger.debug(f"Loaded settings: {self.settings}")
+
+        except Exception as e:
+            self.logger.error(f"Error loading settings: {e}")
+
+        return self.settings
+
+    def save_settings(self, settings=None):
+        """Save settings to config file using cross-platform location"""
+        if settings is None:
+            settings = self.settings
+
+        self.logger.debug(f"Saving settings to: {self.config_path}")
+
+        try:
+            qsettings = QSettings(str(self.config_path), QSettings.IniFormat)
+
+            # Save backup settings
+            qsettings.beginGroup("Backup")
+            qsettings.setValue("enabled", settings.get("Backup/enabled", False))
+            qsettings.setValue("frequency", settings.get("Backup/frequency", "Daily"))
+            qsettings.setValue("location", settings.get("Backup/location", ""))
+            qsettings.endGroup()
+
+            # Save logging settings
+            qsettings.beginGroup("Logging")
+            qsettings.setValue(
+                "config", settings.get("Logging/config", "Minimal logging")
+            )
+            qsettings.setValue("level", settings.get("Logging/level", "INFO"))
+            qsettings.endGroup()
+
+            # Force immediate write to disk
+            qsettings.sync()
+
+            # Verify settings were saved
+            if qsettings.status() != QSettings.NoError:
+                self.logger.error(
+                    f"Failed to save settings: QSettings error {qsettings.status()}"
+                )
+                return False
+
+            self.logger.info("Settings saved successfully")
+            return True
+        except Exception as e:
+            self.logger.error(f"Failed to save settings: {e}", exc_info=True)
+            return False
 
     def update_logging_level(self, level):
         update_logging_level(level)
@@ -66,8 +134,8 @@ class PasswordManagerApp:
         new_log_level = new_settings.get("Logging/level", "INFO")
         self.update_logging_level(new_log_level)
 
-        # Update proxy settings
-        self.proxy.settings = new_settings
+        # Update in-memory settings
+        self.settings.update(new_settings)
 
         # Update backup settings
         self.backup_manager.update_settings(
@@ -76,67 +144,10 @@ class PasswordManagerApp:
             new_settings.get("Backup/location", ""),
         )
 
-    def check_admin_privileges(self):
-        """Check if we have admin privileges"""
-        try:
-            if os.name == "nt":
-                return ctypes.windll.shell32.IsUserAnAdmin() != 0
-            else:
-                # Check if we can run sudo without password
-                result = subprocess.run(
-                    ["sudo", "-n", "true"],
-                    stderr=subprocess.DEVNULL,
-                    stdout=subprocess.DEVNULL,
-                )
-                return result.returncode == 0
-        except Exception:
-            return False
-
     def run(self):
         # Set application icon
         app_icon = QIcon(resource_path("assets/icon.png"))
         self.qt_app.setWindowIcon(app_icon)
-
-        # Try to enable firewall first
-        firewall_success = self.firewall.block_incoming()
-
-        # If firewall failed and we haven't checked privileges yet
-        if not firewall_success and not self.privilege_checked:
-            # Check if we have admin privileges now
-            self.has_admin_privileges = self.check_admin_privileges()
-            self.privilege_checked = True
-
-            # If we still don't have privileges, show warning
-            if not self.has_admin_privileges:
-                result = QMessageBox.warning(
-                    None,
-                    "Admin Privileges Required",
-                    "SecurePass Manager requires administrator privileges for full security features.\n\n"
-                    "Some security features like firewall protection will be limited.\n\n"
-                    "Do you want to grant administrator privileges now?",
-                    QMessageBox.Yes | QMessageBox.No,
-                )
-
-                if result == QMessageBox.Yes:
-                    # Try to grant privileges
-                    grant_success = self.grant_admin_privileges()
-
-                    if grant_success:
-                        # Update privilege status and try firewall again
-                        self.has_admin_privileges = True
-                        self.firewall.block_incoming(use_sudo=True)
-                    else:
-                        # Continue with limited functionality
-                        self.logger.warning("Continuing without admin privileges")
-                else:
-                    # User declined privileges - continue normally
-                    self.logger.info("User declined admin privileges")
-
-        # Apply proxy settings
-        self.proxy.set_application_proxy()
-
-        if self.proxy.settings["enabled"] and self.proxy.settings["system_wide"]:
-            self.proxy.set_system_proxy()
 
         # Create login window
         self.login_window = LoginWindow(self)
@@ -153,7 +164,7 @@ class PasswordManagerApp:
         self.logger.debug(f"Backup manager db_path updated to: {db_path}")
 
         # Load settings from INI file
-        self.proxy.load_settings()
+        self.load_settings()
 
         # Start backup scheduler with current settings
         self.start_backup_manager()
@@ -161,9 +172,9 @@ class PasswordManagerApp:
     def start_backup_manager(self):
         """Start backup scheduler with current settings"""
         backup_settings = {
-            "enabled": self.proxy.settings.get("Backup/enabled", False),
-            "frequency": self.proxy.settings.get("Backup/frequency", "Daily"),
-            "location": self.proxy.settings.get("Backup/location", ""),
+            "enabled": self.settings.get("Backup/enabled", False),
+            "frequency": self.settings.get("Backup/frequency", "Daily"),
+            "location": self.settings.get("Backup/location", ""),
         }
 
         # Update backup manager
@@ -172,76 +183,6 @@ class PasswordManagerApp:
             backup_settings["frequency"],
             backup_settings["location"],
         )
-
-    def grant_admin_privileges(self):
-        """Run specific commands with admin privileges using a GUI password prompt"""
-        try:
-            if os.name == "nt":
-                # Windows - re-run with admin privileges
-                self.logger.info("Requesting Windows admin privileges")
-                ctypes.windll.shell32.ShellExecuteW(
-                    None, "runas", sys.executable, " ".join(sys.argv), None, 1
-                )
-                sys.exit(0)
-                return True  # Never reached, but included for completeness
-
-            else:
-                # Unix-like systems - use GUI password prompt
-                self.logger.info("Requesting Unix admin privileges")
-                command = " && ".join(
-                    [
-                        "ufw enable",
-                        "ufw default deny incoming",
-                        "ufw default allow outgoing",
-                    ]
-                )
-
-                # Use system-specific GUI sudo prompts
-                if platform.system() == "Darwin":
-                    applescript = f"""
-                    do shell script "{command}" 
-                    with administrator privileges
-                    """
-                    subprocess.run(["osascript", "-e", applescript], check=True)
-                else:  # Linux
-                    subprocess.run(["pkexec", "sh", "-c", command], check=True)
-
-                # Update privilege status
-                self.has_admin_privileges = True
-                self.firewall.active = True
-
-                QMessageBox.information(
-                    None, "Privileges Granted", "Security features have been enabled."
-                )
-                return True
-
-        except subprocess.CalledProcessError as e:
-            self.logger.error(f"Privilege escalation failed: {e}")
-            QMessageBox.critical(
-                None,
-                "Privilege Error",
-                f"Failed to grant admin privileges: {str(e)}\n\n"
-                "Please try again or run the application as administrator.",
-            )
-            return False
-        except Exception as e:
-            self.logger.error(f"Unexpected privilege error: {e}")
-            QMessageBox.critical(
-                None, "Error", f"An unexpected error occurred: {str(e)}"
-            )
-            return False
-
-    def restart_app(self):
-        """Restart the application"""
-        if os.name == "nt":
-            # Windows
-            ctypes.windll.shell32.ShellExecuteW(
-                None, "runas", sys.executable, " ".join(sys.argv), None, 1
-            )
-        else:
-            # Unix-like systems
-            os.execv(sys.executable, ["python"] + sys.argv)
-        sys.exit()
 
     def on_exit(self):
         """Clean up on application exit"""
