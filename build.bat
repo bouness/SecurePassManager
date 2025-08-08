@@ -23,6 +23,7 @@ python -m nuitka ^
     --enable-plugin=pyside6 ^
     --include-qt-plugins=sqldrivers,qml ^
     --include-data-dir=assets=assets ^
+    --include-data-dir=logs=logs ^
     --include-data-file=version.py=version.py ^
     --include-package=cryptography ^
     --include-module=cffi ^
