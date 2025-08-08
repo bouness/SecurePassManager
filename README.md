@@ -6,7 +6,7 @@ In today's digital world, we juggle countless online accounts - email, banking, 
 
 SecurePass Manager solves this critical problem by providing a **military-grade encrypted vault** for all your credentials. Unlike cloud-based password managers that store your data on remote servers, SecurePass Manager keeps everything encrypted locally on your device. Your sensitive information never leaves your computer, ensuring maximum protection against data breaches and unauthorized access.
 
-With sophisticated security features like automatic firewall protection, secure proxy support, and encrypted clipboard handling, SecurePass Manager goes beyond basic password storage to provide comprehensive digital protection. Whether you're a security-conscious professional, a privacy advocate, or someone who simply wants to stop forgetting passwords, SecurePass Manager offers the perfect balance of robust security and user-friendly convenience.
+With sophisticated security features and encrypted clipboard handling, SecurePass Manager goes beyond basic password storage to provide comprehensive digital protection. Whether you're a security-conscious professional, a privacy advocate, or someone who simply wants to stop forgetting passwords, SecurePass Manager offers the perfect balance of robust security and user-friendly convenience.
 
 ## Comprehensive Security Features
 
@@ -15,20 +15,6 @@ With sophisticated security features like automatic firewall protection, secure 
 - Zero-knowledge architecture (we never see your passwords)
 - Client-side encryption before storage
 - Multiple encryption algorithms supported (AES-128, AES-256, ChaCha20)
-
-### 🛡️ Advanced Security Integrations
-- **Automatic Firewall Protection**: Blocks incoming connections by default
-  - Windows: Netsh Advanced Firewall integration
-  - macOS: PF firewall control
-  - Linux: UFW firewall management
-- **Secure Proxy Support**: Route traffic through encrypted proxies
-  - HTTP/HTTPS/SOCKS5 protocols
-  - Authenticated proxy support
-  - System-wide or application-only configuration
-- **Clipboard Security**: Auto-clearing clipboard with visual countdown
-  - Configurable timeout (5-300 seconds)
-  - Automatic clearing on app lock
-  - Visual progress indicator
 
 ### 🛠️ Password Management Tools
 - **Secure Password Generator**: Create uncrackable passwords
@@ -55,6 +41,7 @@ With sophisticated security features like automatic firewall protection, secure 
 - Automatic database backups
 - Password expiration reminders
 - Activity logging with multiple verbosity levels
+- Clipboard Security: Auto-clearing clipboard with configurable timeout (5-300 seconds)
 
 ## Detailed Feature Breakdown
 
@@ -89,7 +76,7 @@ Store unlimited passwords in your encrypted vault with these features:
 ## Getting Started
 
 ### System Requirements
-- **Operating System**: Windows 10+, macOS 10.15+, or Linux (Ubuntu 20.04+)
+- **Operating System**: Windows 10+, macOS 10.15+, or Linux
 - **Python**: Version 3.8 or higher
 - **Disk Space**: 50 MB minimum
 - **Memory**: 512 MB RAM
@@ -114,10 +101,10 @@ pip install -r requirements.txt
 python main.py
 ```
 
-#### Method 2: Pre-built Packages (Coming Soon)
+#### Method 2: Pre-built Packages
 - Windows: `.exe` installer
-- macOS: `.dmg` package
-- Linux: `.deb` and `.rpm` packages
+- Linux: `tar.gz` packages
+- See [releases page for downloads](https://github.com/bouness/SecurePassManager/releases)
 
 ## Security Architecture Deep Dive
 
@@ -133,12 +120,7 @@ SecurePass Manager employs a multi-layered security approach:
    - Automatic memory wiping after use
    - Protection against memory scraping attacks
 
-3. **Network Security**:
-   - Automatic firewall configuration
-   - Secure proxy support
-   - No outgoing connections except when explicitly configured
-
-4. **Physical Security**:
+3. **Physical Security**:
    - Local database storage only
    - Optional USB drive operation
    - Self-destruct mechanism for emergency situations
@@ -157,10 +139,10 @@ Currently, SecurePass Manager is designed as a local application for maximum sec
 ### How is this better than browser password managers?
 Unlike browser-based password managers, SecurePass Manager:
 - Stores passwords in an encrypted database rather than browser storage
-- Provides advanced security features like firewall protection
 - Offers secure password generation with customizable policies
 - Protects against browser-based vulnerabilities and exploits
 - Works across all browsers and applications
+- Provides advanced clipboard security features
 
 ### Can I import passwords from other managers?
 Yes! We support importing from:
@@ -198,16 +180,12 @@ Scan to donate via Venmo:
 
 ![Venmo QR](https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=https://venmo.com/youness-bougteb)
 
-
 ## Screenshots
 
 | Login Screen | Main Password Vault |
 |--------------|---------------------|
 | ![Login Screen](assets/screenshots/login.png) | ![Password Vault](assets/screenshots/main.png) |
 
-| Security Settings | Password Generator |
-|-------------------|--------------------|
-| ![Security Settings](assets/screenshots/security.png) | ![Proxy Settings](assets/screenshots/proxy.png) |
 
 ## License
 
@@ -215,4 +193,6 @@ SecurePass Manager is released under the **MIT License** - see the [LICENSE](LIC
 
 ---
 
-**Ready to take control of your digital security?** Download SecurePass Manager today and experience the peace of mind that comes with truly secure password management.
+**Ready to take control of your digital security?**
+
+[Download SecurePass Manager](https://github.com/bouness/SecurePassManager/releases) today and experience the peace of mind that comes with truly secure password management.

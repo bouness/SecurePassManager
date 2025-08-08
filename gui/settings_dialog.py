@@ -28,10 +28,15 @@ class SettingsDialog(QDialog):
         super().__init__(parent)
         self.app_manager = app_manager
         self.setWindowTitle("SecurePass Settings")
-        self.setMinimumSize(700, 500)
+        self.setMinimumSize(650, 650)
 
         # Create tab widget
         self.tab_widget = QTabWidget()
+
+        # Advanced Tab
+        self.advanced_tab = QWidget()
+        self.setup_advanced_tab(self.advanced_tab)
+        self.tab_widget.addTab(self.advanced_tab, "Advanced")
 
         # Security Tab
         self.security_tab = QWidget()
@@ -42,11 +47,6 @@ class SettingsDialog(QDialog):
         self.privacy_tab = QWidget()
         self.setup_privacy_tab(self.privacy_tab)
         self.tab_widget.addTab(self.privacy_tab, "Privacy")
-
-        # Advanced Tab
-        self.advanced_tab = QWidget()
-        self.setup_advanced_tab(self.advanced_tab)
-        self.tab_widget.addTab(self.advanced_tab, "Advanced")
 
         # Buttons
         self.button_box = QDialogButtonBox(
