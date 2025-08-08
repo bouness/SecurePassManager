@@ -3,10 +3,8 @@
 
 set -e
 
-# Get version from version.py
-VERSION=$(python3 -c "from version import __version__; print(__version__)")
-APP_NAME="securepass"
-INSTALL_DIR="/opt/$APP_NAME-$VERSION"
+APP_NAME="SecurePass"
+INSTALL_DIR="/opt/$APP_NAME"
 BIN_PATH="/usr/local/bin/$APP_NAME"
 DESKTOP_FILE="/usr/share/applications/$APP_NAME.desktop"
 ICON_PATH="$INSTALL_DIR/assets/icon.png"
@@ -30,7 +28,7 @@ rm -rf "$INSTALL_DIR/installer"
 
 # Create executable symlink
 echo "Creating executable symlink..."
-ln -sf "$INSTALL_DIR/main" "$BIN_PATH"
+ln -sf "$INSTALL_DIR/main.bin" "$BIN_PATH"
 
 # Create desktop entry
 echo "Creating desktop entry..."
@@ -55,7 +53,7 @@ echo "Updating desktop database..."
 update-desktop-database /usr/share/applications || true
 
 echo "=============================================="
-echo "$APP_NAME $VERSION installed successfully!"
+echo "$APP_NAME installed successfully!"
 echo "Installation directory: $INSTALL_DIR"
 echo "Run command: $APP_NAME"
 echo "Find in your application menu: SecurePass"

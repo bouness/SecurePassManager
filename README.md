@@ -184,7 +184,7 @@ Scan to donate via Venmo:
 
 | Login Screen | Main Password Vault |
 |--------------|---------------------|
-| ![Login Screen](assets/screenshots/login.png) | ![Password Vault](assets/screenshots/main.png) |
+| ![Login Screen](.github/screenshots/login.png) | ![Password Vault](.github/screenshots/main.png) |
 
 
 ## License

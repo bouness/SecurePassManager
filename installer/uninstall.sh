@@ -1,7 +1,7 @@
 #!/bin/bash
 # securepass uninstaller
 
-APP_NAME="securepass"
+APP_NAME="SecurePass"
 INSTALL_DIR="/opt/$APP_NAME"
 BIN_PATH="/usr/local/bin/$APP_NAME"
 DESKTOP_FILE="/usr/share/applications/$APP_NAME.desktop"
